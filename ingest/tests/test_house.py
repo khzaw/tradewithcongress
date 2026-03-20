@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import httpx
 import psycopg
 import pytest
 
@@ -11,6 +12,8 @@ from ingest.house import (
     HouseFilingRecord,
     build_house_archive_url,
     parse_house_archive_xml,
+    persist_house_document,
+    sha256_digest,
     sync_house_metadata,
 )
 from ingest.migrate import (
@@ -69,6 +72,43 @@ def test_build_house_archive_url_uses_clerk_pattern() -> None:
     )
 
 
+def test_persist_house_document_skips_existing_downloads(tmp_path) -> None:
+    record = HouseFilingRecord(
+        prefix="Hon.",
+        first_name="Richard",
+        middle_name="W.",
+        last_name="Allen",
+        suffix=None,
+        filing_type="P",
+        state_code="GA",
+        district_code="12",
+        report_year=2026,
+        filing_date=datetime(2026, 1, 15, tzinfo=UTC).date(),
+        document_id="20033751",
+    )
+    payload = b"%PDF-1.7 test payload"
+    call_count = {"value": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        call_count["value"] += 1
+        assert str(request.url) == record.pdf_url
+        return httpx.Response(200, content=payload)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        first_store = persist_house_document(record, tmp_path, client)
+        second_store = persist_house_document(record, tmp_path, client)
+
+    expected_path = tmp_path / "house" / "2026" / "20033751.pdf"
+
+    assert call_count["value"] == 1
+    assert first_store.downloaded is True
+    assert second_store.downloaded is False
+    assert first_store.relative_path == "house/2026/20033751.pdf"
+    assert expected_path.read_bytes() == payload
+    assert first_store.sha256 == sha256_digest(payload)
+    assert second_store.sha256 == sha256_digest(payload)
+
+
 @pytest.fixture(scope="session")
 def settings() -> Settings:
     return Settings()
@@ -113,7 +153,9 @@ def db_conn(settings: Settings) -> psycopg.Connection:
         conn.rollback()
 
 
-def test_sync_house_metadata_is_idempotent(db_conn: psycopg.Connection) -> None:
+def test_sync_house_metadata_is_idempotent(
+    db_conn: psycopg.Connection, tmp_path
+) -> None:
     records = [
         HouseFilingRecord(
             prefix="Hon.",
@@ -143,11 +185,29 @@ def test_sync_house_metadata_is_idempotent(db_conn: psycopg.Connection) -> None:
         ),
     ]
 
-    first_sync = sync_house_metadata(db_conn, year=2026, records=records)
-    second_sync = sync_house_metadata(db_conn, year=2026, records=records)
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=f"pdf:{request.url}".encode("utf-8"))
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        first_sync = sync_house_metadata(
+            db_conn,
+            year=2026,
+            records=records,
+            document_storage_dir=tmp_path,
+            client=client,
+        )
+        second_sync = sync_house_metadata(
+            db_conn,
+            year=2026,
+            records=records,
+            document_storage_dir=tmp_path,
+            client=client,
+        )
 
     assert first_sync.records_processed == 2
     assert second_sync.records_processed == 2
+    assert first_sync.documents_downloaded == 2
+    assert second_sync.documents_downloaded == 0
 
     with db_conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM officials")
@@ -158,8 +218,17 @@ def test_sync_house_metadata_is_idempotent(db_conn: psycopg.Connection) -> None:
         documents_count, = cur.fetchone()
         cur.execute("SELECT count(*) FROM official_aliases")
         aliases_count, = cur.fetchone()
+        cur.execute(
+            """
+            SELECT count(*)
+            FROM filing_documents
+            WHERE storage_path IS NOT NULL AND sha256 IS NOT NULL
+            """
+        )
+        stored_documents_count, = cur.fetchone()
 
     assert officials_count == 1
     assert filings_count == 2
     assert documents_count == 2
     assert aliases_count == 3
+    assert stored_documents_count == 2

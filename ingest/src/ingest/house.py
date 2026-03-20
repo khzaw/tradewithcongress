@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+import hashlib
 from io import BytesIO
+from pathlib import Path
 import re
 from typing import Final
 from zipfile import ZipFile
@@ -136,6 +138,14 @@ class HouseSyncSummary:
     unique_officials: int
     filings_synced: int
     documents_synced: int
+    documents_downloaded: int
+
+
+@dataclass(frozen=True, slots=True)
+class StoredDocument:
+    relative_path: str
+    sha256: str
+    downloaded: bool
 
 
 def slugify(value: str) -> str:
@@ -146,11 +156,29 @@ def build_house_archive_url(year: int) -> str:
     return HOUSE_ARCHIVE_URL_TEMPLATE.format(year=year)
 
 
-def fetch_house_archive(year: int, *, timeout: float = 30.0) -> bytes:
-    with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+def fetch_house_archive(
+    year: int,
+    *,
+    timeout: float = 30.0,
+    client: httpx.Client | None = None,
+) -> bytes:
+    if client is not None:
         response = client.get(build_house_archive_url(year))
         response.raise_for_status()
         return response.content
+
+    with httpx.Client(timeout=timeout, follow_redirects=True) as new_client:
+        response = new_client.get(build_house_archive_url(year))
+        response.raise_for_status()
+        return response.content
+
+
+def fetch_house_document(
+    client: httpx.Client, record: HouseFilingRecord
+) -> bytes:
+    response = client.get(record.pdf_url)
+    response.raise_for_status()
+    return response.content
 
 
 def parse_house_archive_zip(data: bytes) -> list[HouseFilingRecord]:
@@ -224,16 +252,30 @@ def sync_house_metadata(
     year: int,
     records: list[HouseFilingRecord],
     synced_at: datetime | None = None,
+    document_storage_dir: Path | None = None,
+    client: httpx.Client | None = None,
 ) -> HouseSyncSummary:
     sync_timestamp = synced_at or datetime.now(tz=UTC)
     official_ids: set[int] = set()
+    documents_downloaded = 0
 
     with conn.transaction():
         for record in records:
             official_id = upsert_official(conn, record)
             upsert_official_aliases(conn, official_id, record)
             filing_id = upsert_filing(conn, official_id, record, sync_timestamp)
-            upsert_filing_document(conn, filing_id, record, sync_timestamp)
+            document = None
+            if document_storage_dir is not None and client is not None:
+                document = persist_house_document(record, document_storage_dir, client)
+                if document.downloaded:
+                    documents_downloaded += 1
+            upsert_filing_document(
+                conn,
+                filing_id,
+                record,
+                sync_timestamp,
+                stored_document=document,
+            )
             official_ids.add(official_id)
 
     return HouseSyncSummary(
@@ -242,7 +284,41 @@ def sync_house_metadata(
         unique_officials=len(official_ids),
         filings_synced=len(records),
         documents_synced=len(records),
+        documents_downloaded=documents_downloaded,
     )
+
+
+def persist_house_document(
+    record: HouseFilingRecord,
+    storage_root: Path,
+    client: httpx.Client,
+) -> StoredDocument:
+    relative_path = Path("house") / str(record.report_year) / f"{record.document_id}.pdf"
+    absolute_path = storage_root / relative_path
+
+    if absolute_path.exists():
+        payload = absolute_path.read_bytes()
+        return StoredDocument(
+            relative_path=relative_path.as_posix(),
+            sha256=sha256_digest(payload),
+            downloaded=False,
+        )
+
+    payload = fetch_house_document(client, record)
+    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = absolute_path.with_suffix(".tmp")
+    temporary_path.write_bytes(payload)
+    temporary_path.replace(absolute_path)
+
+    return StoredDocument(
+        relative_path=relative_path.as_posix(),
+        sha256=sha256_digest(payload),
+        downloaded=True,
+    )
+
+
+def sha256_digest(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
 
 
 def upsert_official(conn: psycopg.Connection, record: HouseFilingRecord) -> int:
@@ -409,8 +485,15 @@ def upsert_filing_document(
     filing_id: int,
     record: HouseFilingRecord,
     sync_timestamp: datetime,
+    *,
+    stored_document: StoredDocument | None,
 ) -> None:
     raw_metadata = build_sync_metadata(record, sync_timestamp)
+    storage_path = None
+    sha256 = None
+    if stored_document is not None:
+        storage_path = stored_document.relative_path
+        sha256 = stored_document.sha256
 
     with conn.cursor() as cur:
         cur.execute(
@@ -420,6 +503,8 @@ def upsert_filing_document(
                 document_type,
                 source_url,
                 mime_type,
+                storage_path,
+                sha256,
                 fetched_at,
                 parse_status,
                 raw_metadata
@@ -429,18 +514,24 @@ def upsert_filing_document(
                 'pdf',
                 %(source_url)s,
                 'application/pdf',
+                %(storage_path)s,
+                %(sha256)s,
                 %(fetched_at)s,
                 'pending',
                 %(raw_metadata)s
             )
             ON CONFLICT (filing_id, document_type, source_url) DO UPDATE
             SET
+                storage_path = EXCLUDED.storage_path,
+                sha256 = EXCLUDED.sha256,
                 fetched_at = EXCLUDED.fetched_at,
                 raw_metadata = EXCLUDED.raw_metadata
             """,
             {
                 "filing_id": filing_id,
                 "source_url": record.pdf_url,
+                "storage_path": storage_path,
+                "sha256": sha256,
                 "fetched_at": sync_timestamp,
                 "raw_metadata": Jsonb(raw_metadata),
             },

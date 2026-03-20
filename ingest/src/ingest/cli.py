@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from datetime import UTC, datetime
 
+import httpx
 import structlog
 
 from .config import Settings
@@ -51,11 +52,18 @@ def run_doctor(settings: Settings) -> None:
 
 
 def run_house_metadata(settings: Settings, *, year: int) -> None:
-    archive = fetch_house_archive(year)
-    records = parse_house_archive_zip(archive)
+    with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+        archive = fetch_house_archive(year, timeout=30.0, client=client)
+        records = parse_house_archive_zip(archive)
 
-    with connect(settings) as conn:
-        summary = sync_house_metadata(conn, year=year, records=records)
+        with connect(settings) as conn:
+            summary = sync_house_metadata(
+                conn,
+                year=year,
+                records=records,
+                document_storage_dir=settings.document_storage_dir,
+                client=client,
+            )
 
     logger.info(
         "house_metadata_synced",
@@ -64,6 +72,8 @@ def run_house_metadata(settings: Settings, *, year: int) -> None:
         unique_officials=summary.unique_officials,
         filings_synced=summary.filings_synced,
         documents_synced=summary.documents_synced,
+        documents_downloaded=summary.documents_downloaded,
+        document_storage_dir=str(settings.document_storage_dir),
     )
 
 
