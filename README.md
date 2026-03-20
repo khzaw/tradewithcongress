@@ -56,6 +56,14 @@ That flow:
 - normalizes House transaction assets into canonical `assets` and links `transactions.asset_id`
 - parses the latest text-extractable House candidate/full disclosures into snapshot `positions`
 
+Current page-facing read models in Postgres:
+- `official_profile_summaries_vw`
+- `official_portfolio_positions_vw`
+- `official_trade_activity_vw`
+- `ticker_summaries_vw`
+- `ticker_trade_activity_vw`
+- `ticker_latest_holders_vw`
+
 Re-run just the House PTR parser:
 
 ```bash

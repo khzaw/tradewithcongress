@@ -132,6 +132,7 @@ Completed foundation:
   - parse runs
   - parse issues
 - `pg_trgm` extension and search-oriented indexes
+- page-facing read-model views for official and ticker pages
 
 Current House ingestion behavior:
 
@@ -155,6 +156,7 @@ Current House ingestion behavior:
 - parses Section A holdings into latest disclosed `positions` and `position_events`
 - skips image-only or candidate-notice filings with explicit parse issues instead of failing the run
 - records `parse_runs` and `parse_issues` for PTR parsing
+- exposes official/ticker read models directly from Postgres for future API and UI work
 
 Validated local state as of 2026-03-21:
 
@@ -166,6 +168,16 @@ Validated local state as of 2026-03-21:
 - the latest parse pass has `0` outstanding `parse_issues` on the newest PTR parser runs
 - the latest holdings parser runs cover `28` latest disclosure PDFs with `124` materialized snapshot `positions`
 - the latest holdings parser skips `4` latest disclosures cleanly, all classified as `candidate_notice_only`
+- Postgres now exposes:
+  - `official_profile_summaries_vw`
+  - `official_portfolio_positions_vw`
+  - `official_trade_activity_vw`
+  - `ticker_summaries_vw`
+  - `ticker_trade_activity_vw`
+  - `ticker_latest_holders_vw`
+- representative live-query outputs from the local 2026 data:
+  - official summaries are currently led by holdings-heavy candidate/full disclosures such as `Matthew Sin` (`40` active positions)
+  - ticker summaries are currently led by `MSFT` (`20` parsed transactions across `8` officials)
 
 ## Current limits
 
@@ -225,6 +237,7 @@ Current status snapshot:
 - `KHZ-76`: done
 - `KHZ-56`: done
 - `KHZ-57`: in progress
+- `KHZ-73`: in progress
 
 When work changes the actual state of the project, update Linear comments/statuses in the same session.
 
@@ -250,14 +263,14 @@ Recent commits already on `master`:
 
 Immediate next work:
 
-1. Add read models for official and ticker pages.
+1. Add a lightweight API/read layer on top of the official and ticker views.
 2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
 3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
 4. Add Senate ingestion after House parsing is stable.
 
 After that:
 
-1. Start portfolio reconstruction and latest-disclosed-position derivation.
+1. Start broader portfolio reconstruction and latest-disclosed-position derivation beyond snapshot holdings.
 
 ## Notes for a new agent session
 
