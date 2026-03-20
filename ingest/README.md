@@ -21,5 +21,6 @@ The worker currently supports:
 - House PTR transaction parsing via `house-transactions`
 - House asset normalization via `house-assets`
 - House Section A holdings parsing via `house-holdings`
+- OCR fallback for scanned House holdings PDFs when `pdftoppm` and `tesseract` are available
 - local PDF persistence under `../data/documents`
 - parser and sync tests via `pytest`

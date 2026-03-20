@@ -151,6 +151,7 @@ Current House ingestion behavior:
 - normalizes House PTR asset identities into canonical `assets`
 - links parsed transactions to `transactions.asset_id`
 - extracts text from the latest House `candidate_report` / `financial_disclosure_report` PDFs per official
+- falls back to OCR for scanned holdings PDFs when local OCR tools are available
 - parses Section A holdings into latest disclosed `positions` and `position_events`
 - skips image-only or candidate-notice filings with explicit parse issues instead of failing the run
 - records `parse_runs` and `parse_issues` for PTR parsing
@@ -163,8 +164,8 @@ Validated local state as of 2026-03-21:
 - House PTR parsing currently covers `122` parsed filings and `1244` inserted transactions
 - House asset normalization plus holdings parsing currently materialize `801` canonical `assets`
 - the latest parse pass has `0` outstanding `parse_issues` on the newest PTR parser runs
-- the latest holdings parser runs cover `31` latest disclosure PDFs with `123` materialized snapshot `positions`
-- the latest holdings parser skips `5` latest disclosures cleanly (`3` OCR-required PDFs and `2` candidate notices)
+- the latest holdings parser runs cover `28` latest disclosure PDFs with `124` materialized snapshot `positions`
+- the latest holdings parser skips `4` latest disclosures cleanly, all classified as `candidate_notice_only`
 
 ## Current limits
 
@@ -177,7 +178,7 @@ Not implemented yet:
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
-Current House ingest now parses a first-pass holdings snapshot from latest text-extractable candidate/full disclosure reports, but scanned/image-only disclosures still require OCR before they can contribute to positions.
+Current House ingest now parses a first-pass holdings snapshot from latest candidate/full disclosure reports, including OCR-backed classification for scanned notice forms. Rich OCR/table extraction for future scanned holdings disclosures is still a likely follow-up.
 
 ## Source systems
 
@@ -249,9 +250,9 @@ Recent commits already on `master`:
 
 Immediate next work:
 
-1. Improve holdings coverage for image-only House disclosures via OCR or an alternate extraction path.
-2. Add read models for official and ticker pages.
-3. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
+1. Add read models for official and ticker pages.
+2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
+3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
 4. Add Senate ingestion after House parsing is stable.
 
 After that:
