@@ -158,8 +158,8 @@ Validated local state as of 2026-03-21:
 - 2026 House sync downloaded `185` PDFs
 - local DB contains `185` `filing_documents` rows with non-null `storage_path` and `sha256`
 - House PTR parsing currently covers `122` parsed filings and `1244` inserted transactions
-- House asset normalization currently links all `1244` parsed PTR transactions to `652` canonical `assets`
-- the latest parse pass leaves a small unresolved warning set (`4` amount-range edge cases and `2` malformed/dangling PTR layouts)
+- House asset normalization currently links all `1244` parsed PTR transactions to `678` canonical `assets`
+- the latest parse pass has `0` outstanding `parse_issues` on the newest PTR parser runs
 
 ## Current limits
 
@@ -240,15 +240,14 @@ Recent commits already on `master`:
 
 Immediate next work:
 
-1. Resolve the remaining House PTR parsing edge cases flagged in `parse_issues`.
-2. Start parsing non-PTR House filings into holdings/position-relevant data.
-3. Add read models for official and ticker pages.
-4. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
+1. Start parsing non-PTR House filings into holdings/position-relevant data.
+2. Add read models for official and ticker pages.
+3. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
+4. Add Senate ingestion after House parsing is stable.
 
 After that:
 
-1. Add Senate ingestion after House parsing is stable.
-2. Start portfolio reconstruction and latest-disclosed-position derivation.
+1. Start portfolio reconstruction and latest-disclosed-position derivation.
 
 ## Notes for a new agent session
 
