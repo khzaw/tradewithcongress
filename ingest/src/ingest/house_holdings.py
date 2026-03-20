@@ -57,6 +57,7 @@ SECTION_A_HEADER_LINES = frozenset(
     }
 )
 EMPTY_DISCLOSURE_MARKERS = (
+    "CAMPAIGN NOTICE",
     "Dear Mister Clerk:",
     "This is to notify you that I have not yet raised",
 )
@@ -234,7 +235,7 @@ def process_house_holdings_document(
     path = settings.document_storage_dir / document.storage_path
 
     try:
-        extracted_text = extract_pdf_text(path)
+        extracted_text = extract_pdf_text(path, ocr_fallback=True)
         parsed = parse_house_holdings_text(extracted_text)
 
         with conn.transaction():
@@ -289,6 +290,7 @@ def process_house_holdings_document(
 
 def parse_house_holdings_text(text: str) -> HouseHoldingsParseResult:
     stripped_text = text.strip()
+    upper_text = stripped_text.upper()
     if not stripped_text:
         return HouseHoldingsParseResult(
             extracted_text=text,
@@ -304,7 +306,7 @@ def parse_house_holdings_text(text: str) -> HouseHoldingsParseResult:
             parse_status="skipped",
         )
 
-    if any(marker in stripped_text for marker in EMPTY_DISCLOSURE_MARKERS):
+    if any(marker.upper() in upper_text for marker in EMPTY_DISCLOSURE_MARKERS):
         return HouseHoldingsParseResult(
             extracted_text=text,
             holdings=[],

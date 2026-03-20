@@ -102,7 +102,7 @@ def test_run_house_holdings_sync_materializes_latest_snapshot_positions(
     target.write_bytes(b"%PDF-1.4\n")
     monkeypatch.setattr(
         "ingest.house_holdings.extract_pdf_text",
-        lambda _path: CANDIDATE_SECTION_A_TEXT,
+        lambda _path, **_kwargs: CANDIDATE_SECTION_A_TEXT,
     )
 
     with db_conn.cursor() as cur:
