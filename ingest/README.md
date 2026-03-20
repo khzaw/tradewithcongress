@@ -15,4 +15,5 @@ The worker currently supports:
 
 - database connectivity checks via `doctor`
 - House Clerk yearly metadata ingestion via `house-metadata`
+- local PDF persistence under `../data/documents`
 - parser and sync tests via `pytest`

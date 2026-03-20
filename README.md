@@ -46,6 +46,11 @@ Run the House metadata sync:
 make ingest
 ```
 
+That sync:
+- imports the yearly House Clerk metadata archive
+- downloads referenced PDFs into `data/documents/`
+- upserts officials, filings, and source document records
+
 Run the ingest tests:
 
 ```bash
