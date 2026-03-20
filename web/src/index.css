@@ -1,0 +1,62 @@
+:root {
+  color: #26180d;
+  background:
+    radial-gradient(circle at top left, #f3e9de 0%, transparent 26%),
+    linear-gradient(180deg, #fefaf6 0%, #f7f0ea 100%);
+  font-family:
+    Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --accent: #c1582b;
+  --border: rgba(79, 53, 29, 0.14);
+  --muted: #69584b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  max-width: 14ch;
+  margin-bottom: 16px;
+  font-size: clamp(2.75rem, 6vw, 4.8rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+h2 {
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+input:focus,
+button:focus {
+  outline: 2px solid rgba(193, 88, 43, 0.28);
+  outline-offset: 2px;
+}
