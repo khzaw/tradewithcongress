@@ -40,10 +40,16 @@ Apply database migrations:
 make migrate
 ```
 
-Run the ingest scaffold separately when needed:
+Run the House metadata sync:
 
 ```bash
 make ingest
+```
+
+Run the ingest tests:
+
+```bash
+make test-ingest
 ```
 
 Stop local services:

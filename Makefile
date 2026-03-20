@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap db-up db-down dev web ingest migrate lint clean
+.PHONY: bootstrap db-up db-down dev web ingest migrate test-ingest lint clean
 
 bootstrap:
 	cd web && bun install
@@ -23,6 +23,9 @@ ingest: db-up
 
 migrate: db-up
 	./scripts/migrate.sh
+
+test-ingest: db-up
+	cd ingest && uv sync && uv run pytest
 
 lint:
 	cd web && bun run lint

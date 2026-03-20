@@ -6,8 +6,13 @@ Python ingestion and parsing worker for congressional disclosure data.
 
 ```bash
 uv sync
-uv run ingest
+uv run ingest doctor
+uv run ingest house-metadata --year 2026
+uv run pytest
 ```
 
-The current scaffold validates database connectivity and provides the package
-layout for the first ingestion path.
+The worker currently supports:
+
+- database connectivity checks via `doctor`
+- House Clerk yearly metadata ingestion via `house-metadata`
+- parser and sync tests via `pytest`
