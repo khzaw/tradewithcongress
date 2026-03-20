@@ -54,6 +54,7 @@ That flow:
 - upserts officials, filings, and source document records
 - parses House PTR PDFs into `transactions`
 - normalizes House transaction assets into canonical `assets` and links `transactions.asset_id`
+- parses the latest text-extractable House candidate/full disclosures into snapshot `positions`
 
 Re-run just the House PTR parser:
 
@@ -65,6 +66,12 @@ Re-run just the House asset normalization step:
 
 ```bash
 make normalize-assets
+```
+
+Re-run just the House holdings snapshot parser:
+
+```bash
+make parse-holdings
 ```
 
 Run the ingest tests:

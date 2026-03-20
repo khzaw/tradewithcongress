@@ -91,7 +91,7 @@ What they do:
 
 - `make dev`: starts local Postgres and the Vite dev server
 - `make migrate`: applies SQL migrations through the Python migration runner
-- `make ingest`: fetches the current-year House Clerk archive, syncs filing metadata, downloads referenced PDFs, parses House PTR trades, and links normalized assets
+- `make ingest`: fetches the current-year House Clerk archive, syncs filing metadata, downloads referenced PDFs, parses House PTR trades, links normalized assets, and materializes latest text-based House holdings snapshots
 - `make test-ingest`: runs the Python ingest test suite
 - `make db-down`: stops local Postgres
 
@@ -150,16 +150,21 @@ Current House ingestion behavior:
 - parses PTR transactions into `transactions`
 - normalizes House PTR asset identities into canonical `assets`
 - links parsed transactions to `transactions.asset_id`
+- extracts text from the latest House `candidate_report` / `financial_disclosure_report` PDFs per official
+- parses Section A holdings into latest disclosed `positions` and `position_events`
+- skips image-only or candidate-notice filings with explicit parse issues instead of failing the run
 - records `parse_runs` and `parse_issues` for PTR parsing
 
 Validated local state as of 2026-03-21:
 
-- 2026 House sync imported `185` filings across `111` unique officials
-- 2026 House sync downloaded `185` PDFs
-- local DB contains `185` `filing_documents` rows with non-null `storage_path` and `sha256`
+- 2026 House sync imported `186` filings across `112` unique officials
+- 2026 House sync downloaded `186` PDFs
+- local DB contains `186` `filing_documents` rows with non-null `storage_path` and `sha256`
 - House PTR parsing currently covers `122` parsed filings and `1244` inserted transactions
-- House asset normalization currently links all `1244` parsed PTR transactions to `678` canonical `assets`
+- House asset normalization plus holdings parsing currently materialize `801` canonical `assets`
 - the latest parse pass has `0` outstanding `parse_issues` on the newest PTR parser runs
+- the latest holdings parser runs cover `31` latest disclosure PDFs with `123` materialized snapshot `positions`
+- the latest holdings parser skips `5` latest disclosures cleanly (`3` OCR-required PDFs and `2` candidate notices)
 
 ## Current limits
 
@@ -172,7 +177,7 @@ Not implemented yet:
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
-Current House ingest parses PTR trades and links them to canonical assets, but it does not yet parse non-PTR financial disclosure documents into holdings/position snapshots.
+Current House ingest now parses a first-pass holdings snapshot from latest text-extractable candidate/full disclosure reports, but scanned/image-only disclosures still require OCR before they can contribute to positions.
 
 ## Source systems
 
@@ -235,12 +240,16 @@ Recent commits already on `master`:
 - `ad0b1a9` Add project handoff documentation
 - `5514980` Parse House PTR filings into transactions
 - `1d4a467` Document House PTR parsing status
+- `f8a8316` ingest: normalize House transaction assets
+- `1b6bc4c` docs: update House ingest status
+- `f245d4b` ingest: repair PTR page-break parsing
+- `3cdebf5` docs: refresh parser handoff status
 
 ## Next recommended steps
 
 Immediate next work:
 
-1. Start parsing non-PTR House filings into holdings/position-relevant data.
+1. Improve holdings coverage for image-only House disclosures via OCR or an alternate extraction path.
 2. Add read models for official and ticker pages.
 3. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
 4. Add Senate ingestion after House parsing is stable.
