@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from ingest!")
+"""Ingestion pipeline for congressional financial disclosures."""
