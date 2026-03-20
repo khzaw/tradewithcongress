@@ -9,6 +9,7 @@ import structlog
 from .config import Settings
 from .db import connect
 from .house_assets import run_house_asset_sync
+from .house_holdings import run_house_holdings_sync
 from .house import fetch_house_archive, parse_house_archive_zip, sync_house_metadata
 from .house_transactions import run_house_transaction_sync
 
@@ -61,6 +62,21 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=datetime.now(tz=UTC).year,
         help="Filing year to normalize for House transaction assets",
+    )
+    house_holdings = subcommands.add_parser(
+        "house-holdings",
+        help="Parse latest House non-PTR disclosure holdings into snapshot positions",
+    )
+    house_holdings.add_argument(
+        "--year",
+        type=int,
+        default=datetime.now(tz=UTC).year,
+        help="Filing year to parse for House disclosure holdings",
+    )
+    house_holdings.add_argument(
+        "--reparse",
+        action="store_true",
+        help="Reprocess latest holdings documents even if already parsed",
     )
 
     return parser
@@ -134,6 +150,22 @@ def run_house_assets(settings: Settings, *, year: int) -> None:
     )
 
 
+def run_house_holdings(
+    settings: Settings, *, year: int, reparse: bool = False
+) -> None:
+    with connect(settings) as conn:
+        summary = run_house_holdings_sync(conn, settings, year=year, reparse=reparse)
+
+    logger.info(
+        "house_holdings_synced",
+        year=summary.year,
+        documents_processed=summary.documents_processed,
+        documents_skipped=summary.documents_skipped,
+        holdings_parsed=summary.holdings_parsed,
+        positions_materialized=summary.positions_materialized,
+    )
+
+
 def main() -> None:
     structlog.configure()
     parser = build_parser()
@@ -154,6 +186,10 @@ def main() -> None:
 
     if args.command == "house-assets":
         run_house_assets(settings, year=args.year)
+        return
+
+    if args.command == "house-holdings":
+        run_house_holdings(settings, year=args.year, reparse=args.reparse)
         return
 
     raise SystemExit(f"Unsupported command: {args.command}")
