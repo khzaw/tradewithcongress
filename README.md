@@ -53,11 +53,18 @@ That flow:
 - downloads referenced PDFs into `data/documents/`
 - upserts officials, filings, and source document records
 - parses House PTR PDFs into `transactions`
+- normalizes House transaction assets into canonical `assets` and links `transactions.asset_id`
 
 Re-run just the House PTR parser:
 
 ```bash
 make parse-house
+```
+
+Re-run just the House asset normalization step:
+
+```bash
+make normalize-assets
 ```
 
 Run the ingest tests:

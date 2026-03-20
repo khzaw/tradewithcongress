@@ -91,7 +91,7 @@ What they do:
 
 - `make dev`: starts local Postgres and the Vite dev server
 - `make migrate`: applies SQL migrations through the Python migration runner
-- `make ingest`: fetches the current-year House Clerk archive, syncs filing metadata, and downloads referenced PDFs
+- `make ingest`: fetches the current-year House Clerk archive, syncs filing metadata, downloads referenced PDFs, parses House PTR trades, and links normalized assets
 - `make test-ingest`: runs the Python ingest test suite
 - `make db-down`: stops local Postgres
 
@@ -148,6 +148,8 @@ Current House ingestion behavior:
 - avoids redundant local re-downloads on rerun
 - extracts text from House PTR PDFs
 - parses PTR transactions into `transactions`
+- normalizes House PTR asset identities into canonical `assets`
+- links parsed transactions to `transactions.asset_id`
 - records `parse_runs` and `parse_issues` for PTR parsing
 
 Validated local state as of 2026-03-21:
@@ -156,13 +158,13 @@ Validated local state as of 2026-03-21:
 - 2026 House sync downloaded `185` PDFs
 - local DB contains `185` `filing_documents` rows with non-null `storage_path` and `sha256`
 - House PTR parsing currently covers `122` parsed filings and `1244` inserted transactions
+- House asset normalization currently links all `1244` parsed PTR transactions to `652` canonical `assets`
 - the latest parse pass leaves a small unresolved warning set (`4` amount-range edge cases and `2` malformed/dangling PTR layouts)
 
 ## Current limits
 
 Not implemented yet:
 
-- PDF parsing into transactions/assets
 - Senate ingestion
 - portfolio reconstruction engine beyond schema design
 - public API layer
@@ -170,7 +172,7 @@ Not implemented yet:
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
-Current House ingest parses PTR trades, but it does not yet parse non-PTR financial disclosure documents into holdings/assets.
+Current House ingest parses PTR trades and links them to canonical assets, but it does not yet parse non-PTR financial disclosure documents into holdings/position snapshots.
 
 ## Source systems
 
@@ -231,15 +233,17 @@ Recent commits already on `master`:
 - `fd73a25` Persist House filing documents locally
 - `00a1edf` Document local filing storage
 - `ad0b1a9` Add project handoff documentation
+- `5514980` Parse House PTR filings into transactions
+- `1d4a467` Document House PTR parsing status
 
 ## Next recommended steps
 
 Immediate next work:
 
 1. Resolve the remaining House PTR parsing edge cases flagged in `parse_issues`.
-2. Normalize asset names and raw tickers into `assets`.
-3. Start parsing non-PTR House filings into holdings/position-relevant data.
-4. Add read models for official and ticker pages.
+2. Start parsing non-PTR House filings into holdings/position-relevant data.
+3. Add read models for official and ticker pages.
+4. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
 
 After that:
 
