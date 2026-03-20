@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tradewithcongress-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tradewithcongress}
+      POSTGRES_USER: ${POSTGRES_USER:-tradewithcongress}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradewithcongress}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tradewithcongress} -d ${POSTGRES_DB:-tradewithcongress}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
