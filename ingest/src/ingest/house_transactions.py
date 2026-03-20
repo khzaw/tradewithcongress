@@ -47,6 +47,9 @@ TICKER_PATTERN = re.compile(
 ASSET_TYPE_PATTERN = re.compile(r"\[(?P<asset_type>[A-Z]{1,4})\]\s*$")
 FILING_ID_PATTERN = re.compile(r"Filing ID #(?P<filing_id>\d+)")
 LEADING_ROW_ID_PATTERN = re.compile(r"^\d{6,}\s*")
+HEADER_SPLIT_AMOUNT_PATTERN = re.compile(
+    r"^(?P<asset_tail>.+?)\s+(?P<amount>\$\d[\d,]*(?:\.\d{2})?)$"
+)
 
 TRANSACTION_TYPE_BY_CODE: dict[str, str] = {
     "P": "purchase",
@@ -71,6 +74,15 @@ FOOTER_MARKERS = (
     "I P O",
     "C S",
     "Digitally Signed:",
+)
+PAGE_HEADER_SEQUENCE = (
+    "ID Owner Asset Transaction",
+    "Type",
+    "Date Notification",
+    "Date",
+    "Amount Cap.",
+    "Gains >",
+    "$200?",
 )
 
 
@@ -147,7 +159,7 @@ class HouseTransactionSyncSummary:
 def parse_house_ptr_text(text: str) -> HousePtrParseResult:
     lines = [line for line in text.splitlines() if line]
     filing_id = extract_filing_id(lines)
-    transaction_lines = slice_transaction_section(lines)
+    transaction_lines = normalize_transaction_section(slice_transaction_section(lines))
     transactions: list[HousePtrTransaction] = []
     issues: list[ParseIssueRecord] = []
 
@@ -571,6 +583,60 @@ def slice_transaction_section(lines: list[str]) -> list[str]:
             break
 
     return lines[start:end]
+
+
+def normalize_transaction_section(lines: list[str]) -> list[str]:
+    normalized_lines: list[str] = []
+    index = 0
+
+    while index < len(lines):
+        header_length = match_page_header_block(lines, index)
+        if header_length:
+            next_index = index + header_length
+            if normalized_lines and next_index < len(lines):
+                repaired_line = repair_page_split_line(
+                    previous_line=normalized_lines[-1],
+                    next_line=lines[next_index],
+                )
+                if repaired_line is not None:
+                    normalized_lines[-1] = repaired_line
+                    index = next_index + 1
+                    continue
+
+            index = next_index
+            continue
+
+        normalized_lines.append(lines[index])
+        index += 1
+
+    return normalized_lines
+
+
+def match_page_header_block(lines: list[str], start_index: int) -> int:
+    index = start_index
+    if FILING_ID_PATTERN.search(lines[index]):
+        index += 1
+
+    for expected_line in PAGE_HEADER_SEQUENCE:
+        if index >= len(lines) or lines[index] != expected_line:
+            return 0
+        index += 1
+
+    return index - start_index
+
+
+def repair_page_split_line(previous_line: str, next_line: str) -> str | None:
+    asset_prefix, embedded_transaction = split_embedded_transaction(previous_line)
+    if embedded_transaction is None or asset_prefix is None:
+        return None
+
+    next_line_match = HEADER_SPLIT_AMOUNT_PATTERN.match(next_line)
+    if next_line_match is None:
+        return None
+
+    asset_tail = next_line_match.group("asset_tail").strip()
+    trailing_amount = next_line_match.group("amount").strip()
+    return f"{asset_prefix} {asset_tail} {embedded_transaction} {trailing_amount}"
 
 
 def is_transaction_line(line: str) -> bool:

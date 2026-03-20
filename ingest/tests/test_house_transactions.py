@@ -61,6 +61,42 @@ financial advisor.
 Filing ID #20034202
 """
 
+HEADER_SPLIT_AMOUNT_TEXT = """\
+P T R
+$200?
+Verizon Communications Inc.S 01/30/202601/30/2026$15,001 -
+Filing ID #20034034
+ID Owner Asset Transaction
+Type
+Date Notification
+Date
+Amount Cap.
+Gains >
+$200?
+Common Stock (VZ) [ST] $50,000
+F S: New
+* For the complete list of asset type abbreviations, please visit https://fd.house.gov/reference/asset-type-codes.aspx.
+"""
+
+HEADER_SPLIT_DETAILS_TEXT = """\
+P T R
+$200?
+Waters Corporation Common Stock
+(WAT) [ST]
+S (partial) 02/13/202603/03/2026$1,001 - $15,000
+Filing ID #20034190
+ID Owner Asset Transaction
+Type
+Date Notification
+Date
+Amount Cap.
+Gains >
+$200?
+F S: New
+S O: Kean Family Partnership
+* For the complete list of asset type abbreviations, please visit https://fd.house.gov/reference/asset-type-codes.aspx.
+"""
+
 
 def test_extract_pdf_text_reads_real_ptr_fixture() -> None:
     extracted = extract_pdf_text(HOUSE_PTR_FIXTURE)
@@ -122,6 +158,25 @@ Filing ID #2000152815
     assert parsed.transactions[0].raw_ticker == "BTC"
     assert parsed.transactions[1].transaction_modifier == "partial"
     assert parsed.transactions[1].transaction_type == "partial_sale"
+
+
+def test_parse_house_ptr_text_repairs_header_split_embedded_transaction_lines() -> None:
+    parsed = parse_house_ptr_text(HEADER_SPLIT_AMOUNT_TEXT)
+
+    assert len(parsed.transactions) == 1
+    assert parsed.transactions[0].raw_asset_name == "Verizon Communications Inc. Common Stock (VZ) [ST]"
+    assert parsed.transactions[0].amount_range_label == "$15,001 - $50,000"
+    assert parsed.issues == []
+
+
+def test_parse_house_ptr_text_keeps_details_after_repeated_page_header() -> None:
+    parsed = parse_house_ptr_text(HEADER_SPLIT_DETAILS_TEXT)
+
+    assert len(parsed.transactions) == 1
+    assert parsed.transactions[0].raw_asset_name == "Waters Corporation Common Stock (WAT) [ST]"
+    assert parsed.transactions[0].filing_status == "New"
+    assert parsed.transactions[0].source_owner == "Kean Family Partnership"
+    assert parsed.issues == []
 
 
 def test_run_house_transaction_sync_writes_transactions_and_parse_metadata(
