@@ -9,6 +9,7 @@ import structlog
 from .config import Settings
 from .db import connect
 from .house import fetch_house_archive, parse_house_archive_zip, sync_house_metadata
+from .house_transactions import run_house_transaction_sync
 
 
 logger = structlog.get_logger(__name__)
@@ -32,6 +33,22 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=datetime.now(tz=UTC).year,
         help="Filing year to fetch from the House Clerk archive",
+    )
+
+    house_transactions = subcommands.add_parser(
+        "house-transactions",
+        help="Parse downloaded House PTR PDFs into transaction rows",
+    )
+    house_transactions.add_argument(
+        "--year",
+        type=int,
+        default=datetime.now(tz=UTC).year,
+        help="Filing year to parse for House PTR transactions",
+    )
+    house_transactions.add_argument(
+        "--reparse",
+        action="store_true",
+        help="Reprocess documents that were already parsed successfully",
     )
 
     return parser
@@ -77,6 +94,21 @@ def run_house_metadata(settings: Settings, *, year: int) -> None:
     )
 
 
+def run_house_transactions(
+    settings: Settings, *, year: int, reparse: bool = False
+) -> None:
+    with connect(settings) as conn:
+        summary = run_house_transaction_sync(conn, settings, year=year, reparse=reparse)
+
+    logger.info(
+        "house_transactions_synced",
+        year=summary.year,
+        documents_processed=summary.documents_processed,
+        documents_skipped=summary.documents_skipped,
+        transactions_inserted=summary.transactions_inserted,
+    )
+
+
 def main() -> None:
     structlog.configure()
     parser = build_parser()
@@ -89,6 +121,10 @@ def main() -> None:
 
     if args.command == "house-metadata":
         run_house_metadata(settings, year=args.year)
+        return
+
+    if args.command == "house-transactions":
+        run_house_transactions(settings, year=args.year, reparse=args.reparse)
         return
 
     raise SystemExit(f"Unsupported command: {args.command}")
