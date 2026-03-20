@@ -3,8 +3,11 @@
 This directory holds:
 
 - bootstrap SQL used by local Docker Compose
-- future migrations
+- migrations
 - derived SQL views and read models
 
-The first schema migration is intentionally deferred to the next implementation step.
+Run migrations with:
 
+```bash
+make migrate
+```

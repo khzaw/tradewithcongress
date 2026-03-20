@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap db-up db-down dev web ingest lint clean
+.PHONY: bootstrap db-up db-down dev web ingest migrate lint clean
 
 bootstrap:
 	cd web && bun install
@@ -21,9 +21,11 @@ web:
 ingest: db-up
 	./scripts/ingest.sh
 
+migrate: db-up
+	./scripts/migrate.sh
+
 lint:
 	cd web && bun run lint
 
 clean:
 	rm -rf web/node_modules web/dist ingest/.venv postgres-data
-

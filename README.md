@@ -34,6 +34,12 @@ That flow:
 - boots the Vite dev server
 - leaves the DB running for ingest work
 
+Apply database migrations:
+
+```bash
+make migrate
+```
+
 Run the ingest scaffold separately when needed:
 
 ```bash
@@ -55,4 +61,3 @@ db/       sql bootstrap and migrations
 infra/    deployment and environment docs
 scripts/  local developer scripts
 ```
-

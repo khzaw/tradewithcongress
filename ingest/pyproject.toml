@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 ingest = "ingest.cli:main"
+migrate = "ingest.migrate:main"
 
 [build-system]
 requires = ["hatchling"]
