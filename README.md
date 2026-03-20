@@ -2,6 +2,8 @@
 
 Low-cost congressional disclosure search and visualization project.
 
+For project intent, architecture decisions, current implementation status, and next steps, start with `PROJECT_CONTEXT.md`.
+
 ## Stack
 
 - `web/`: React + Vite + TypeScript
