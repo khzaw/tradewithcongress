@@ -8,6 +8,7 @@ Python ingestion and parsing worker for congressional disclosure data.
 uv sync
 uv run ingest doctor
 uv run ingest house-metadata --year 2026
+uv run ingest house-transactions --year 2026
 uv run pytest
 ```
 
@@ -15,5 +16,6 @@ The worker currently supports:
 
 - database connectivity checks via `doctor`
 - House Clerk yearly metadata ingestion via `house-metadata`
+- House PTR transaction parsing via `house-transactions`
 - local PDF persistence under `../data/documents`
 - parser and sync tests via `pytest`

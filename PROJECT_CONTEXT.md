@@ -1,6 +1,6 @@
 # Project Context
 
-Last updated: 2026-03-20
+Last updated: 2026-03-21
 
 ## What this project is
 
@@ -146,12 +146,17 @@ Current House ingestion behavior:
 - persists referenced PDFs under `data/documents/house/{year}/{document_id}.pdf`
 - stores `storage_path` and `sha256` on `filing_documents`
 - avoids redundant local re-downloads on rerun
+- extracts text from House PTR PDFs
+- parses PTR transactions into `transactions`
+- records `parse_runs` and `parse_issues` for PTR parsing
 
-Validated local state as of 2026-03-20:
+Validated local state as of 2026-03-21:
 
 - 2026 House sync imported `185` filings across `111` unique officials
 - 2026 House sync downloaded `185` PDFs
 - local DB contains `185` `filing_documents` rows with non-null `storage_path` and `sha256`
+- House PTR parsing currently covers `122` parsed filings and `1244` inserted transactions
+- the latest parse pass leaves a small unresolved warning set (`4` amount-range edge cases and `2` malformed/dangling PTR layouts)
 
 ## Current limits
 
@@ -165,7 +170,7 @@ Not implemented yet:
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
-Current House ingest only imports filing metadata plus PDF storage. It does not yet extract the disclosed trades from the PDFs.
+Current House ingest parses PTR trades, but it does not yet parse non-PTR financial disclosure documents into holdings/assets.
 
 ## Source systems
 
@@ -225,21 +230,21 @@ Recent commits already on `master`:
 - `4a26f0a` Add ingest tests and developer commands
 - `fd73a25` Persist House filing documents locally
 - `00a1edf` Document local filing storage
+- `ad0b1a9` Add project handoff documentation
 
 ## Next recommended steps
 
 Immediate next work:
 
-1. Parse House filing PDFs into extracted text.
-2. Start with PTR-focused extraction and map rows into `transactions`.
-3. Introduce parse-run / parse-issue records during extraction.
-4. Add tests around at least one real PTR example and one non-PTR filing.
+1. Resolve the remaining House PTR parsing edge cases flagged in `parse_issues`.
+2. Normalize asset names and raw tickers into `assets`.
+3. Start parsing non-PTR House filings into holdings/position-relevant data.
+4. Add read models for official and ticker pages.
 
 After that:
 
-1. Normalize asset names and raw tickers into `assets`.
-2. Start building read models for official and ticker pages.
-3. Add Senate ingestion after House parsing is stable.
+1. Add Senate ingestion after House parsing is stable.
+2. Start portfolio reconstruction and latest-disclosed-position derivation.
 
 ## Notes for a new agent session
 

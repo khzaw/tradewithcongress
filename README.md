@@ -48,10 +48,17 @@ Run the House metadata sync:
 make ingest
 ```
 
-That sync:
+That flow:
 - imports the yearly House Clerk metadata archive
 - downloads referenced PDFs into `data/documents/`
 - upserts officials, filings, and source document records
+- parses House PTR PDFs into `transactions`
+
+Re-run just the House PTR parser:
+
+```bash
+make parse-house
+```
 
 Run the ingest tests:
 
