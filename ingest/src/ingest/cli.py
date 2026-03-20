@@ -8,6 +8,7 @@ import structlog
 
 from .config import Settings
 from .db import connect
+from .house_assets import run_house_asset_sync
 from .house import fetch_house_archive, parse_house_archive_zip, sync_house_metadata
 from .house_transactions import run_house_transaction_sync
 
@@ -49,6 +50,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--reparse",
         action="store_true",
         help="Reprocess documents that were already parsed successfully",
+    )
+
+    house_assets = subcommands.add_parser(
+        "house-assets",
+        help="Normalize House transaction assets and link transactions to canonical assets",
+    )
+    house_assets.add_argument(
+        "--year",
+        type=int,
+        default=datetime.now(tz=UTC).year,
+        help="Filing year to normalize for House transaction assets",
     )
 
     return parser
@@ -109,6 +121,19 @@ def run_house_transactions(
     )
 
 
+def run_house_assets(settings: Settings, *, year: int) -> None:
+    with connect(settings) as conn:
+        summary = run_house_asset_sync(conn, year=year)
+
+    logger.info(
+        "house_assets_synced",
+        year=summary.year,
+        transactions_scanned=summary.transactions_scanned,
+        assets_created=summary.assets_created,
+        transactions_linked=summary.transactions_linked,
+    )
+
+
 def main() -> None:
     structlog.configure()
     parser = build_parser()
@@ -125,6 +150,10 @@ def main() -> None:
 
     if args.command == "house-transactions":
         run_house_transactions(settings, year=args.year, reparse=args.reparse)
+        return
+
+    if args.command == "house-assets":
+        run_house_assets(settings, year=args.year)
         return
 
     raise SystemExit(f"Unsupported command: {args.command}")

@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap db-up db-down dev web ingest parse-house migrate test-ingest lint clean
+.PHONY: bootstrap db-up db-down dev web ingest parse-house normalize-assets migrate test-ingest lint clean
 
 bootstrap:
 	cd web && bun install
@@ -23,6 +23,9 @@ ingest: db-up
 
 parse-house: db-up
 	cd ingest && uv run ingest house-transactions --year $$(date +%Y)
+
+normalize-assets: db-up
+	cd ingest && uv run ingest house-assets --year $$(date +%Y)
 
 migrate: db-up
 	./scripts/migrate.sh
