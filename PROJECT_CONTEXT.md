@@ -258,8 +258,8 @@ Current status snapshot:
 - `KHZ-56`: done
 - `KHZ-57`: in progress
 - `KHZ-73`: in progress
-- `KHZ-168`: in progress
-- `KHZ-169`: in progress
+- `KHZ-168`: done
+- `KHZ-169`: done
 
 When work changes the actual state of the project, update Linear comments/statuses in the same session.
 
@@ -280,6 +280,8 @@ Recent commits already on `master`:
 - `1b6bc4c` docs: update House ingest status
 - `f245d4b` ingest: repair PTR page-break parsing
 - `3cdebf5` docs: refresh parser handoff status
+- `d8cc205` api: add versioned read service
+- `d6f5b69` docs: record api versioning contract
 
 ## Next recommended steps
 
