@@ -16,5 +16,6 @@ __pycache__/
 node_modules/
 dist/
 coverage/
+tmp/
 data/
 postgres-data/

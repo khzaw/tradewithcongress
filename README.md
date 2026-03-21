@@ -78,11 +78,20 @@ Current search and lookup surface:
 - fuzzy official lookup via aliases + display-name trigram matching
 - ticker and issuer lookup via exact ticker, prefix, and trigram matching
 
+Current dashboard surface:
+- `GET /api/v1/overview?limit=...`
+- tracked official / filing / trade / asset counts
+- recent disclosure feed for the landing page
+- monthly activity buckets for lightweight visualizations
+- intentionally explicit benchmark seam for future S&P 500 market-data overlays
+
 Current frontend browse surface:
+- redesigned dashboard landing page with a flatter, higher-density command-center layout, activity panels, portfolio leaders, ticker flow, and recent disclosure tables
 - landing-page search results and top cards link into official and ticker detail views
 - shareable query-state URLs use `?official={id}` and `?ticker={symbol}`
-- official detail views show latest disclosed holdings plus recent trades
-- ticker detail views show latest holders plus recent trade activity
+- official detail views show latest disclosed holdings, recent trades, and visual portfolio/trade breakdowns
+- ticker detail views show latest holders, recent trade activity, and visual action/party breakdowns
+- benchmark panels are real UI surfaces, but live S&P 500 market data is not wired yet
 
 Re-run just the House PTR parser:
 

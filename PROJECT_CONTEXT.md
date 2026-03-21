@@ -31,6 +31,7 @@ Primary product goals:
 Planned user-facing surfaces:
 
 - universal search
+- overview dashboard
 - official profile pages
 - ticker pages
 - filing detail pages
@@ -167,6 +168,14 @@ Current House ingestion behavior:
 - keeps HTTP `BIGINT` identifiers string-typed to avoid JS precision issues
 - renders shareable frontend detail views for officials and tickers via URL query state
 - lets search results and top-list cards drill directly into official and ticker detail panels backed by `/api/v1`
+- exposes an overview snapshot endpoint for the homepage command-center surface
+- ships a redesigned dark editorial frontend with:
+  - a dashboard-style landing page
+  - dedicated official profile panels
+  - dedicated ticker intelligence panels
+  - visual trade/portfolio breakdowns driven by live local disclosure data
+  - a flatter, higher-density visual system with minimal panel chrome and tighter typography
+- reserves explicit UI seams for S&P 500 benchmarking without pretending that market-price feeds are already wired
 
 Validated local state as of 2026-03-21:
 
@@ -188,6 +197,7 @@ Validated local state as of 2026-03-21:
 - HTTP API now exposes:
   - `GET /api/v1/meta`
   - `GET /api/v1/search`
+  - `GET /api/v1/overview`
   - `GET /api/v1/officials`
   - `GET /api/v1/officials/:officialId`
   - `GET /api/v1/officials/:officialId/portfolio`
@@ -197,6 +207,7 @@ Validated local state as of 2026-03-21:
   - `GET /api/v1/tickers/:ticker/trades`
   - `GET /api/v1/tickers/:ticker/holders`
 - representative live-query outputs from the local 2026 data:
+  - `/api/v1/overview` currently returns tracked-official, filing, trade, asset, and recent-disclosure aggregates for the dashboard
   - official summaries are currently led by holdings-heavy candidate/full disclosures such as `Matthew Sin` (`40` active positions)
   - ticker summaries are currently led by `MSFT` (`20` parsed transactions across `8` officials)
   - `/api/v1/search?q=mathew%20sin` resolves `Matthew Sin` despite the typo
@@ -213,7 +224,8 @@ Not implemented yet:
 - richer official disambiguation and canonical-identity merging beyond current alias/display-name fuzzy matching
 - richer security search and canonicalization beyond current ticker/issuer matching
 - frontend still uses lightweight query-state navigation rather than a dedicated client router
-- official and ticker pages do not yet expose richer filters, filing detail links, or filing source drill-down
+- overview, official, and ticker pages now have a stronger visual shell and first-pass visualizations, but they do not yet expose richer filters, filing detail links, or filing source drill-down
+- S&P comparison panels are currently product/UI scaffolding only; a real market benchmark feed still needs to be added
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
@@ -221,10 +233,14 @@ Current House ingest now parses a first-pass holdings snapshot from latest candi
 
 The current frontend surface is now good enough to browse real local data end to end:
 
+- the landing page acts as a dashboard with tracked-volume metrics, disclosure activity charts, ticker flow, portfolio leaders, and recent trade tables
 - overview cards lead into official and ticker detail views
 - search results can deep-link into those same detail views
 - URLs can be shared with `?official={id}` or `?ticker={symbol}`
-- detail views are still intentionally thin and read-only
+- official detail views now include profile metrics, holdings tables, trade tables, and visual portfolio/trade breakdowns
+- official detail views now lean into a left-rail profile layout with denser concentration and mix surfaces
+- ticker detail views now include issuer metrics, latest holders, trade ledgers, and party/action visual breakdowns
+- detail views are still intentionally read-only
 
 ## Source systems
 
@@ -266,6 +282,7 @@ Important issues:
 - `KHZ-78` Implement CI/CD for git-push deployment to the Oracle VM
 - `KHZ-60` Implement official identity resolution and fuzzy people search
 - `KHZ-61` Implement security normalization and ticker-side search index
+- `KHZ-170` Build the overview dashboard and benchmark surfaces
 - `KHZ-168` Build the lightweight read API for official and ticker views
 - `KHZ-169` Define API versioning strategy for the read API
 
@@ -278,6 +295,7 @@ Current status snapshot:
 - `KHZ-73`: in progress
 - `KHZ-60`: in progress
 - `KHZ-61`: in progress
+- `KHZ-170`: in progress
 - `KHZ-168`: done
 - `KHZ-169`: done
 
@@ -304,6 +322,8 @@ Recent commits already on `master`:
 - `d6f5b69` docs: record api versioning contract
 - `b9746ab` api: add universal search endpoint
 - `124c6f7` web: add search results experience
+- `903439a` api: add overview snapshot endpoint
+- `c6986d9` web: redesign dashboard and profile surfaces
 
 ## Next recommended steps
 
