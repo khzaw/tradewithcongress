@@ -8,6 +8,7 @@ For project intent, architecture decisions, current implementation status, and n
 
 - `api/`: versioned Bun + Hono read API
 - `web/`: React + Vite + TypeScript
+- styling: Tailwind CSS v4
 - `ingest/`: Python worker and parsing pipeline
 - `db/`: Postgres bootstrap and future migrations
 - `infra/`: deployment and environment notes
@@ -92,6 +93,7 @@ Current frontend browse surface:
 - official detail views show latest disclosed holdings, recent trades, and visual portfolio/trade breakdowns
 - ticker detail views show latest holders, recent trade activity, and visual action/party breakdowns
 - benchmark panels are real UI surfaces, but live S&P 500 market data is not wired yet
+- the frontend styling system now runs on Tailwind CSS v4 rather than plain hand-authored global CSS
 
 Re-run just the House PTR parser:
 

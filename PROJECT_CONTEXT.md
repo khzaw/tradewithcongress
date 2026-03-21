@@ -43,7 +43,7 @@ Planned user-facing surfaces:
 Chosen stack:
 
 - read API: Bun + Hono
-- frontend: React + Vite + TypeScript
+- frontend: React + Vite + TypeScript + Tailwind CSS v4
 - ingestion/parsing: Python
 - database: Postgres
 - search: Postgres full-text search + `pg_trgm`
@@ -51,6 +51,7 @@ Chosen stack:
 - deployment target: Oracle Cloud Always Free Linux VM
 - Python tooling: `uv`
 - frontend tooling: `bun`
+- styling system: Tailwind CSS v4
 
 Intentional non-decisions:
 
@@ -175,6 +176,7 @@ Current House ingestion behavior:
   - dedicated ticker intelligence panels
   - visual trade/portfolio breakdowns driven by live local disclosure data
   - a flatter, higher-density visual system with minimal panel chrome and tighter typography
+  - Tailwind CSS v4 as the frontend styling layer, with the current app surface migrated off plain global styling into Tailwind-driven theme/component CSS
 - reserves explicit UI seams for S&P 500 benchmarking without pretending that market-price feeds are already wired
 
 Validated local state as of 2026-03-21:
@@ -324,6 +326,7 @@ Recent commits already on `master`:
 - `124c6f7` web: add search results experience
 - `903439a` api: add overview snapshot endpoint
 - `c6986d9` web: redesign dashboard and profile surfaces
+- `3bbc611` web: adopt Tailwind CSS v4
 
 ## Next recommended steps
 

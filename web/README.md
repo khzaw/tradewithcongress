@@ -2,6 +2,8 @@
 
 React + Vite + TypeScript frontend for the `tradewithcongress` product surface.
 
+Styling is handled with Tailwind CSS v4.
+
 ## Scripts
 
 ```bash
@@ -23,3 +25,4 @@ Current frontend behavior:
 - official detail views with a profile rail, holdings concentration surfaces, trades, and visual portfolio/trade breakdowns
 - ticker detail views with holders, trades, and visual action/party breakdowns
 - benchmark panels reserved for future S&P 500 overlays
+- the current app surface is styled through Tailwind theme/component CSS instead of plain global CSS
