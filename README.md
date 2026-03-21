@@ -78,6 +78,12 @@ Current search and lookup surface:
 - fuzzy official lookup via aliases + display-name trigram matching
 - ticker and issuer lookup via exact ticker, prefix, and trigram matching
 
+Current frontend browse surface:
+- landing-page search results and top cards link into official and ticker detail views
+- shareable query-state URLs use `?official={id}` and `?ticker={symbol}`
+- official detail views show latest disclosed holdings plus recent trades
+- ticker detail views show latest holders plus recent trade activity
+
 Re-run just the House PTR parser:
 
 ```bash

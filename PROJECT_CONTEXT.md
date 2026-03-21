@@ -165,6 +165,8 @@ Current House ingestion behavior:
 - exposes official/ticker read models directly from Postgres for future API and UI work
 - serves the first public read endpoints under `/api/v1`
 - keeps HTTP `BIGINT` identifiers string-typed to avoid JS precision issues
+- renders shareable frontend detail views for officials and tickers via URL query state
+- lets search results and top-list cards drill directly into official and ticker detail panels backed by `/api/v1`
 
 Validated local state as of 2026-03-21:
 
@@ -199,6 +201,8 @@ Validated local state as of 2026-03-21:
   - ticker summaries are currently led by `MSFT` (`20` parsed transactions across `8` officials)
   - `/api/v1/search?q=mathew%20sin` resolves `Matthew Sin` despite the typo
   - `/api/v1/search?q=msft` returns `MSFT` as the top ticker match
+  - `/api/v1/officials/171` currently returns `Matthew Sin` with `40` active positions
+  - `/api/v1/tickers/MSFT` currently returns `20` parsed trades with latest activity on `2026-03-11`
 
 ## Current limits
 
@@ -208,11 +212,19 @@ Not implemented yet:
 - portfolio reconstruction engine beyond schema design
 - richer official disambiguation and canonical-identity merging beyond current alias/display-name fuzzy matching
 - richer security search and canonicalization beyond current ticker/issuer matching
-- real frontend product pages beyond the scaffolded landing page, live data preview, and search results
+- frontend still uses lightweight query-state navigation rather than a dedicated client router
+- official and ticker pages do not yet expose richer filters, filing detail links, or filing source drill-down
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
 Current House ingest now parses a first-pass holdings snapshot from latest candidate/full disclosure reports, including OCR-backed classification for scanned notice forms. Rich OCR/table extraction for future scanned holdings disclosures is still a likely follow-up.
+
+The current frontend surface is now good enough to browse real local data end to end:
+
+- overview cards lead into official and ticker detail views
+- search results can deep-link into those same detail views
+- URLs can be shared with `?official={id}` or `?ticker={symbol}`
+- detail views are still intentionally thin and read-only
 
 ## Source systems
 
@@ -297,7 +309,7 @@ Recent commits already on `master`:
 
 Immediate next work:
 
-1. Add dedicated official and ticker detail page flows in the frontend on top of the existing `/api/v1` endpoints.
+1. Deepen the official and ticker pages with richer filtering, provenance, and eventual filing-detail links.
 2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
 3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
 4. Add Senate ingestion after House parsing is stable.
