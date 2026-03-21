@@ -223,11 +223,25 @@ function App() {
   return (
     <main className="studio-shell">
       <header className="topbar">
-        <div className="brand-stack">
-          <div className="brand-wordmark">trade.<span>congress</span></div>
-          <p className="brand-copy">
-            Disclosure records reconstructed into portfolios, trade flow, and benchmark-ready watchlists.
-          </p>
+        <div className="topbar-headline">
+          <div className="topbar-row">
+            <div className="brand-wordmark">tradewithcongress</div>
+            <nav className="topbar-links" aria-label="Project status">
+              <span className="topbar-link">Docs</span>
+              <span className="topbar-link">Search</span>
+              <span className="topbar-link topbar-link-active">House live</span>
+            </nav>
+          </div>
+
+          <div className="brand-stack">
+            <span className="section-kicker">Congressional trading desk</span>
+            <h1 className="intro-headline">
+              Track portfolios, trade flow, and filing lag from public congressional disclosures.
+            </h1>
+            <p className="brand-copy">
+              Search members or tickers, inspect latest disclosed holdings, and keep every claim tied to the source filing.
+            </p>
+          </div>
         </div>
 
         <div className="topbar-meta">
@@ -397,10 +411,10 @@ function OverviewView({
     <section className="overview-layout">
       <aside className="rail-column">
         <section className="hero-surface">
-          <span className="section-kicker">Congressional trading desk</span>
-          <h1>Portfolios and trade flow, indexed from public filings.</h1>
+          <span className="section-kicker">Current coverage</span>
+          <h1>House disclosures are live now. Senate is the next ingest lane.</h1>
           <p className="muted-copy">
-            Inspect members, trace any ticker back to filers, and keep every view tied to delayed disclosure records.
+            Every table and chart here is rebuilt from parsed House filings, with timing, source provenance, and confidence preserved.
           </p>
         </section>
 
