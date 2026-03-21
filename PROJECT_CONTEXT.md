@@ -177,7 +177,8 @@ Current House ingestion behavior:
   - visual trade/portfolio breakdowns driven by live local disclosure data
   - a flatter, higher-density visual system with minimal panel chrome and tighter typography
   - Tailwind CSS v4 as the frontend styling layer, with the current app surface migrated off plain global styling into Tailwind-driven theme/component CSS
-- reserves explicit UI seams for S&P 500 benchmarking without pretending that market-price feeds are already wired
+  - a quieter editorial typography system and masthead inspired by minimalist enterprise/product sites rather than loud dashboard chrome
+  - reserves explicit UI seams for S&P 500 benchmarking without pretending that market-price feeds are already wired
 
 Validated local state as of 2026-03-21:
 
