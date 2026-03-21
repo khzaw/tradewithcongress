@@ -1,8 +1,9 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap db-up db-down dev web ingest parse-house normalize-assets parse-holdings migrate test-ingest lint clean
+.PHONY: bootstrap db-up db-down dev web api ingest parse-house normalize-assets parse-holdings migrate test-ingest test-api lint clean
 
 bootstrap:
+	cd api && bun install
 	cd web && bun install
 	cd ingest && uv sync
 
@@ -17,6 +18,9 @@ dev: db-up
 
 web:
 	./scripts/web.sh
+
+api:
+	./scripts/api.sh
 
 ingest: db-up
 	./scripts/ingest.sh
@@ -36,8 +40,12 @@ migrate: db-up
 test-ingest: db-up
 	cd ingest && uv sync && uv run pytest
 
+test-api: db-up migrate
+	cd api && bun install && bun test
+
 lint:
+	cd api && bun run typecheck
 	cd web && bun run lint
 
 clean:
-	rm -rf web/node_modules web/dist ingest/.venv postgres-data
+	rm -rf api/node_modules web/node_modules web/dist ingest/.venv postgres-data
