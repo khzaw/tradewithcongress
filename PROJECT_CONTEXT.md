@@ -185,6 +185,7 @@ Validated local state as of 2026-03-21:
   - `ticker_latest_holders_vw`
 - HTTP API now exposes:
   - `GET /api/v1/meta`
+  - `GET /api/v1/search`
   - `GET /api/v1/officials`
   - `GET /api/v1/officials/:officialId`
   - `GET /api/v1/officials/:officialId/portfolio`
@@ -196,6 +197,8 @@ Validated local state as of 2026-03-21:
 - representative live-query outputs from the local 2026 data:
   - official summaries are currently led by holdings-heavy candidate/full disclosures such as `Matthew Sin` (`40` active positions)
   - ticker summaries are currently led by `MSFT` (`20` parsed transactions across `8` officials)
+  - `/api/v1/search?q=mathew%20sin` resolves `Matthew Sin` despite the typo
+  - `/api/v1/search?q=msft` returns `MSFT` as the top ticker match
 
 ## Current limits
 
@@ -203,8 +206,9 @@ Not implemented yet:
 
 - Senate ingestion
 - portfolio reconstruction engine beyond schema design
-- search-by-name / search-by-ticker API flows beyond top-list and detail endpoints
-- real frontend product pages beyond the scaffolded landing page and live data preview
+- richer official disambiguation and canonical-identity merging beyond current alias/display-name fuzzy matching
+- richer security search and canonicalization beyond current ticker/issuer matching
+- real frontend product pages beyond the scaffolded landing page, live data preview, and search results
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
@@ -248,6 +252,8 @@ Important issues:
 - `KHZ-76` Set up frictionless local development with Docker Compose and hot reload
 - `KHZ-77` Provision the Oracle Cloud VM and production Docker host
 - `KHZ-78` Implement CI/CD for git-push deployment to the Oracle VM
+- `KHZ-60` Implement official identity resolution and fuzzy people search
+- `KHZ-61` Implement security normalization and ticker-side search index
 - `KHZ-168` Build the lightweight read API for official and ticker views
 - `KHZ-169` Define API versioning strategy for the read API
 
@@ -258,6 +264,8 @@ Current status snapshot:
 - `KHZ-56`: done
 - `KHZ-57`: in progress
 - `KHZ-73`: in progress
+- `KHZ-60`: in progress
+- `KHZ-61`: in progress
 - `KHZ-168`: done
 - `KHZ-169`: done
 
@@ -288,9 +296,10 @@ Recent commits already on `master`:
 Immediate next work:
 
 1. Add search endpoints and lookup-by-name/ticker flows on top of `/api/v1`.
-2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
-3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
-4. Add Senate ingestion after House parsing is stable.
+2. Add dedicated official and ticker detail page flows in the frontend on top of the existing `/api/v1` endpoints.
+3. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
+4. Improve OCR/table extraction if future scanned House holdings disclosures appear.
+5. Add Senate ingestion after House parsing is stable.
 
 After that:
 

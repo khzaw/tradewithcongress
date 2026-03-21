@@ -72,6 +72,12 @@ Current HTTP API versioning rule:
 - breaking route or response-contract changes move to a new `/api/v{major}` namespace
 - `BIGINT` ids are returned as strings from the API to avoid future precision issues in JS clients
 
+Current search and lookup surface:
+- `GET /api/v1/search?q=...&limit=...`
+- grouped official and ticker results
+- fuzzy official lookup via aliases + display-name trigram matching
+- ticker and issuer lookup via exact ticker, prefix, and trigram matching
+
 Re-run just the House PTR parser:
 
 ```bash

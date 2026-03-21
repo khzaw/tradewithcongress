@@ -41,6 +41,12 @@
   margin-top: 32px;
 }
 
+.search-caption {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .search-input,
 .search-button {
   border-radius: 16px;
@@ -81,6 +87,34 @@
 }
 
 .panel p {
+  color: var(--muted);
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-header span {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.search-results {
+  margin-top: 24px;
+}
+
+.search-group + .search-group {
+  margin-top: 20px;
+}
+
+.search-group h3 {
+  margin: 16px 0 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 

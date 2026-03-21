@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import './App.css'
 
 interface OfficialSummary {
@@ -24,15 +24,50 @@ interface ApiState {
   topTickers: TickerSummary[]
 }
 
+interface OfficialSearchResult {
+  officialId: string
+  displayName: string
+  chamber: string
+  stateCode: string | null
+  matchedAlias: string
+  positionCount: number
+  transactionCount: number
+}
+
+interface TickerSearchResult {
+  ticker: string
+  representativeAssetName: string
+  transactionCount: number
+  holderCount: number
+  matchedField: string
+}
+
+interface SearchState {
+  query: string
+  officials: OfficialSearchResult[]
+  tickers: TickerSearchResult[]
+}
+
 const EMPTY_STATE: ApiState = {
   apiVersion: 'v1',
   topOfficials: [],
   topTickers: [],
 }
 
+const EMPTY_SEARCH_STATE: SearchState = {
+  query: '',
+  officials: [],
+  tickers: [],
+}
+
 function App() {
   const [apiState, setApiState] = useState<ApiState>(EMPTY_STATE)
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchState, setSearchState] = useState<SearchState>(EMPTY_SEARCH_STATE)
+  const [searchStatus, setSearchStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle')
 
   useEffect(() => {
     let cancelled = false
@@ -63,12 +98,14 @@ function App() {
           return
         }
 
-        setApiState({
-          apiVersion: metaBody.apiVersion,
-          topOfficials: officialsBody.data,
-          topTickers: tickersBody.data,
+        startTransition(() => {
+          setApiState({
+            apiVersion: metaBody.apiVersion,
+            topOfficials: officialsBody.data,
+            topTickers: tickersBody.data,
+          })
+          setStatus('ready')
         })
-        setStatus('ready')
       } catch {
         if (cancelled) {
           return
@@ -84,6 +121,38 @@ function App() {
     }
   }, [])
 
+  async function handleSearchSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault()
+
+    const query = searchQuery.trim()
+    if (query.length < 2) {
+      setSearchStatus('error')
+      return
+    }
+
+    setSearchStatus('loading')
+
+    try {
+      const response = await fetch(
+        `/api/v1/search?q=${encodeURIComponent(query)}&limit=5`,
+      )
+      if (!response.ok) {
+        throw new Error('Failed to load search results')
+      }
+
+      const body = (await response.json()) as { data: SearchState }
+
+      startTransition(() => {
+        setSearchState(body.data)
+        setSearchStatus('ready')
+      })
+    } catch {
+      setSearchStatus('error')
+    }
+  }
+
   return (
     <main className="app-shell">
       <section className="hero">
@@ -96,18 +165,90 @@ function App() {
           This scaffold is the starting point for the official-first and
           ticker-first product experience.
         </p>
-        <div className="search-shell">
+        <form className="search-shell" onSubmit={(event) => void handleSearchSubmit(event)}>
           <input
             className="search-input"
             type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search Nancy Pelosi, NVDA, or Wells Fargo"
             aria-label="Search filings, officials, or securities"
           />
-          <button className="search-button" type="button">
+          <button className="search-button" type="submit">
             Search
           </button>
-        </div>
+        </form>
+        <p className="search-caption">
+          Universal lookup is versioned under <code>/api/v1/search</code>.
+        </p>
       </section>
+
+      {(searchStatus !== 'idle' || searchState.query) && (
+        <section className="panel search-results">
+          <div className="panel-header">
+            <h2>Search results</h2>
+            {searchState.query ? <span>{searchState.query}</span> : null}
+          </div>
+
+          {searchStatus === 'loading' ? <p>Searching officials and securities…</p> : null}
+
+          {searchStatus === 'error' ? (
+            <p>
+              Enter at least two characters and make sure the versioned read API
+              is running.
+            </p>
+          ) : null}
+
+          {searchStatus === 'ready' &&
+          searchState.officials.length === 0 &&
+          searchState.tickers.length === 0 ? (
+            <p>No matches found for that query.</p>
+          ) : null}
+
+          {searchStatus === 'ready' && searchState.officials.length > 0 ? (
+            <div className="search-group">
+              <h3>Officials</h3>
+              <ul className="summary-list">
+                {searchState.officials.map((official) => (
+                  <li key={official.officialId} className="summary-item">
+                    <span>
+                      <strong>{official.displayName}</strong>
+                      <small>
+                        {official.chamber} · {official.stateCode ?? 'n/a'} · alias match:{' '}
+                        {official.matchedAlias}
+                      </small>
+                    </span>
+                    <span className="summary-metric">
+                      {official.positionCount} holdings · {official.transactionCount} trades
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {searchStatus === 'ready' && searchState.tickers.length > 0 ? (
+            <div className="search-group">
+              <h3>Securities</h3>
+              <ul className="summary-list">
+                {searchState.tickers.map((ticker) => (
+                  <li key={ticker.ticker} className="summary-item">
+                    <span>
+                      <strong>{ticker.ticker}</strong>
+                      <small>
+                        {ticker.representativeAssetName} · matched on {ticker.matchedField}
+                      </small>
+                    </span>
+                    <span className="summary-metric">
+                      {ticker.transactionCount} trades · {ticker.holderCount} holders
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      )}
 
       <section className="grid">
         <article className="panel">
