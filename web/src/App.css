@@ -1,7 +1,8 @@
+@reference "tailwindcss";
+
+@layer components {
 .studio-shell {
-  width: min(1600px, calc(100vw - 32px));
-  margin: 0 auto;
-  padding: 18px 0 56px;
+  @apply mx-auto w-[min(1600px,calc(100vw-32px))] pt-[18px] pb-14;
 }
 
 .topbar,
@@ -10,17 +11,12 @@
 .profile-card,
 .metric-card,
 .search-surface {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  @apply border-0 bg-transparent shadow-none;
 }
 
 .topbar {
-  display: grid;
+  @apply grid gap-7 border-b border-white/15 pb-[18px];
   grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
-  gap: 28px;
-  padding: 0 0 18px;
-  border-bottom: 1px solid var(--border-strong);
 }
 
 .brand-stack,
@@ -34,8 +30,7 @@
 }
 
 .brand-stack {
-  display: grid;
-  gap: 12px;
+  @apply grid gap-3;
 }
 
 .brand-wordmark {
@@ -61,32 +56,17 @@
 }
 
 .topbar-meta {
-  display: grid;
-  gap: 12px;
+  @apply grid gap-3;
   align-content: end;
 }
 
 .pill-row,
 .pill-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  @apply flex flex-wrap gap-2;
 }
 
 .pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-strong);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  @apply inline-flex min-h-[30px] items-center justify-center rounded-full border border-white/8 bg-transparent px-3 font-mono text-[0.76rem] uppercase tracking-[0.05em] text-white;
 }
 
 .pill-active {
@@ -99,9 +79,8 @@
 }
 
 .command-form {
-  display: grid;
+  @apply grid gap-3;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
 }
 
 .command-input,
@@ -116,13 +95,7 @@
 }
 
 .command-input {
-  min-height: 44px;
-  padding: 0 0 0 2px;
-  border: 0;
-  border-bottom: 1px solid var(--border-strong);
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-strong);
+  @apply min-h-11 rounded-none border-0 border-b border-white/15 bg-transparent pl-0.5 text-white;
 }
 
 .command-input::placeholder {
@@ -130,16 +103,7 @@
 }
 
 .command-button {
-  min-width: 96px;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-strong);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
+  @apply min-w-24 cursor-pointer rounded-full border border-white/15 bg-transparent font-mono text-[0.82rem] uppercase tracking-[0.06em] text-white;
   transition:
     border-color 160ms var(--ease-out),
     color 160ms var(--ease-out),
@@ -172,9 +136,7 @@
 }
 
 .search-surface {
-  margin-top: 18px;
-  padding: 16px 0 0;
-  border-top: 1px solid var(--border);
+  @apply mt-[18px] border-t border-white/8 pt-4;
 }
 
 .search-grid,
@@ -188,7 +150,7 @@
 .profile-stat-grid,
 .profile-column,
 .rail-column {
-  display: grid;
+  @apply grid;
 }
 
 .search-grid,
@@ -202,7 +164,7 @@
 .profile-stat-grid,
 .profile-column,
 .rail-column {
-  gap: 18px;
+  @apply gap-[18px];
 }
 
 .search-grid {
@@ -213,10 +175,7 @@
 .surface-card,
 .hero-surface,
 .profile-card {
-  position: relative;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--border);
-  overflow: hidden;
+  @apply relative overflow-hidden border-t border-white/8 pt-[18px];
 }
 
 .hero-surface,
@@ -234,13 +193,7 @@
 }
 
 .section-kicker {
-  display: inline-block;
-  margin-bottom: 8px;
-  color: var(--text-subtle);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  @apply mb-2 inline-block font-mono text-[0.7rem] uppercase tracking-[0.12em] text-white/45;
 }
 
 .surface-heading,
@@ -1027,4 +980,5 @@
     padding: 4px 0;
     border-top: 0;
   }
+}
 }

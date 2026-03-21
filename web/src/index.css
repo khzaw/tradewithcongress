@@ -1,86 +1,101 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
 
-:root {
-  color: #efede8;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0)),
-    #060606;
-  font-family: 'Instrument Sans', 'Segoe UI', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-optical-sizing: auto;
+@theme {
+  --font-display: "Instrument Sans", "Segoe UI", sans-serif;
+  --font-sans: "Instrument Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
 
-  --font-display: 'Instrument Sans', 'Segoe UI', sans-serif;
-  --font-sans: 'Instrument Sans', 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --panel: transparent;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text-strong: #efede8;
-  --text-muted: #a39d93;
-  --text-subtle: rgba(239, 237, 232, 0.46);
-  --accent-lime: #d3ff4b;
-  --accent-coral: #ff7a59;
-  --accent-violet: #c9bbff;
-  --shadow-panel: none;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --color-ink: #efede8;
+  --color-muted: #a39d93;
+  --color-subtle: rgba(239, 237, 232, 0.46);
+  --color-accent-lime: #d3ff4b;
+  --color-accent-coral: #ff7a59;
+  --color-accent-violet: #c9bbff;
+  --color-surface-border: rgba(255, 255, 255, 0.08);
+  --color-surface-strong: rgba(255, 255, 255, 0.16);
+
+  --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  :root {
+    --font-display: theme(--font-display);
+    --font-mono: theme(--font-mono);
+    --panel: transparent;
+    --border: theme(--color-surface-border);
+    --border-strong: theme(--color-surface-strong);
+    --text-strong: theme(--color-ink);
+    --text-muted: theme(--color-muted);
+    --text-subtle: theme(--color-subtle);
+    --accent-lime: theme(--color-accent-lime);
+    --accent-coral: theme(--color-accent-coral);
+    --accent-violet: theme(--color-accent-violet);
+    --shadow-panel: none;
+    --ease-out: theme(--ease-snappy);
+  }
 
-html,
-body,
-#root {
-  min-height: 100%;
-}
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
-    #060606;
-  font-size: 15px;
-}
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
 
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
+  body {
+    margin: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
+      #060606;
+    color: theme(--color-ink);
+    font-family: theme(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-optical-sizing: auto;
+  }
 
-h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  text-wrap: balance;
-}
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
 
-h2,
-h3 {
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  text-wrap: balance;
-}
+  h1 {
+    font-family: theme(--font-display);
+    font-weight: 700;
+    text-wrap: balance;
+  }
 
-h2 {
-  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
-  line-height: 1.02;
-}
+  h2,
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
 
-button,
-input,
-table {
-  font: inherit;
-}
+  h2 {
+    font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+    line-height: 1.02;
+  }
 
-input:focus,
-button:focus {
-  outline: 2px solid rgba(255, 255, 255, 0.25);
-  outline-offset: 2px;
+  button,
+  input,
+  table {
+    font: inherit;
+  }
+
+  input:focus,
+  button:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.25);
+    outline-offset: 2px;
+  }
 }
