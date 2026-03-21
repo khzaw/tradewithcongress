@@ -1,20 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
 :root {
-  color: #26180d;
+  color: #efede8;
   background:
-    radial-gradient(circle at top left, #f3e9de 0%, transparent 26%),
-    linear-gradient(180deg, #fefaf6 0%, #f7f0ea 100%);
-  font-family:
-    Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0)),
+    #060606;
+  font-family: 'Instrument Sans', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
 
-  --accent: #c1582b;
-  --border: rgba(79, 53, 29, 0.14);
-  --muted: #69584b;
+  --font-display: 'Instrument Sans', 'Segoe UI', sans-serif;
+  --font-sans: 'Instrument Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --panel: transparent;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-strong: #efede8;
+  --text-muted: #a39d93;
+  --text-subtle: rgba(239, 237, 232, 0.46);
+  --accent-lime: #d3ff4b;
+  --accent-coral: #ff7a59;
+  --accent-violet: #c9bbff;
+  --shadow-panel: none;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 * {
@@ -29,34 +42,45 @@ body,
 
 body {
   margin: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
+    #060606;
+  font-size: 15px;
 }
 
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }
 
 h1 {
-  max-width: 14ch;
-  margin-bottom: 16px;
-  font-size: clamp(2.75rem, 6vw, 4.8rem);
-  line-height: 0.95;
-  letter-spacing: -0.06em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 h2 {
-  font-size: 1.15rem;
-  line-height: 1.1;
+  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  line-height: 1.02;
 }
 
 button,
-input {
+input,
+table {
   font: inherit;
 }
 
 input:focus,
 button:focus {
-  outline: 2px solid rgba(193, 88, 43, 0.28);
+  outline: 2px solid rgba(255, 255, 255, 0.25);
   outline-offset: 2px;
 }

@@ -142,6 +142,23 @@ export interface TickerHolder {
   holderRank: number
 }
 
+export interface OverviewActivityBucket {
+  monthStart: string
+  tradeCount: number
+  estimatedVolume: number
+}
+
+export interface OverviewSnapshot {
+  trackedOfficials: number
+  trackedFilings: number
+  trackedTrades: number
+  trackedAssets: number
+  activeHolders: number
+  latestTradeDate: string | null
+  monthlyActivity: OverviewActivityBucket[]
+  recentTrades: OfficialTradeActivity[]
+}
+
 export interface OfficialSearchResult {
   officialId: string
   displayName: string
@@ -179,6 +196,10 @@ export interface ApiState {
   topTickers: TickerSummary[]
 }
 
+export interface DashboardState extends ApiState {
+  overview: OverviewSnapshot
+}
+
 export interface OfficialDetail {
   summary: OfficialSummary
   portfolio: PortfolioPosition[]
@@ -205,15 +226,17 @@ interface RequestOptions {
 
 export async function fetchHomepageData(
   options: RequestOptions = {},
-): Promise<ApiState> {
-  const [metaBody, officialsBody, tickersBody] = await Promise.all([
+): Promise<DashboardState> {
+  const [metaBody, overviewBody, officialsBody, tickersBody] = await Promise.all([
     getJson<MetaResponse>('/api/v1/meta', options),
+    getJson<ResponseEnvelope<OverviewSnapshot>>('/api/v1/overview?limit=12', options),
     getJson<ResponseEnvelope<OfficialSummary[]>>('/api/v1/officials?limit=3', options),
     getJson<ResponseEnvelope<TickerSummary[]>>('/api/v1/tickers?limit=3', options),
   ])
 
   return {
     apiVersion: metaBody.apiVersion,
+    overview: overviewBody.data,
     topOfficials: officialsBody.data,
     topTickers: tickersBody.data,
   }

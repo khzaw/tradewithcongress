@@ -6,16 +6,41 @@ import {
   fetchOfficialDetail,
   fetchSearchResults,
   fetchTickerDetail,
-  type ApiState,
+  type DashboardState,
   type OfficialDetail,
   type OfficialSummary,
+  type OfficialTradeActivity,
+  type PortfolioPosition,
   type SearchState,
   type TickerDetail,
 } from './api.ts'
+import { RingChart, TrendChart } from './charts.tsx'
+import {
+  averageFilingDelayDays,
+  buildAssetTypeBreakdown,
+  buildMonthlyTradeSeries,
+  buildOverviewSeries,
+  buildPartyBreakdown,
+  buildPortfolioExposure,
+  buildTradeTypeBreakdown,
+  latestActivityLabel,
+  relativeOverviewReturn,
+  totalEstimatedTradeVolume,
+} from './insights.ts'
 import { buildViewSearch, parseView, type AppView } from './navigation.ts'
 
-const EMPTY_STATE: ApiState = {
+const EMPTY_STATE: DashboardState = {
   apiVersion: 'v1',
+  overview: {
+    trackedOfficials: 0,
+    trackedFilings: 0,
+    trackedTrades: 0,
+    trackedAssets: 0,
+    activeHolders: 0,
+    latestTradeDate: null,
+    monthlyActivity: [],
+    recentTrades: [],
+  },
   topOfficials: [],
   topTickers: [],
 }
@@ -25,6 +50,17 @@ const EMPTY_SEARCH_STATE: SearchState = {
   officials: [],
   tickers: [],
 }
+
+const STATIC_SECTORS = [
+  'Technology',
+  'Healthcare',
+  'Defense',
+  'Finance',
+  'Energy',
+  'Industrials',
+]
+
+const STATIC_ASSET_TYPES = ['Stocks', 'ETFs', 'Options', 'Bonds', 'Funds']
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -39,7 +75,7 @@ type DetailState =
   | { status: 'error'; view: Exclude<AppView, { kind: 'overview' }> }
 
 function App() {
-  const [apiState, setApiState] = useState<ApiState>(EMPTY_STATE)
+  const [dashboardState, setDashboardState] = useState<DashboardState>(EMPTY_STATE)
   const [status, setStatus] = useState<LoadStatus>('idle')
   const [view, setView] = useState<AppView>(() => parseView(window.location.search))
   const [detailState, setDetailState] = useState<DetailState>(() =>
@@ -65,7 +101,7 @@ function App() {
         }
 
         startTransition(() => {
-          setApiState(nextState)
+          setDashboardState(nextState)
           setStatus('ready')
         })
       } catch (error) {
@@ -185,35 +221,42 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <section className="hero">
-        <div className="eyebrow">
-          Congressional disclosure intelligence · API {apiState.apiVersion}
+    <main className="studio-shell">
+      <header className="topbar">
+        <div className="brand-stack">
+          <div className="brand-wordmark">trade.<span>congress</span></div>
+          <p className="brand-copy">
+            Disclosure records reconstructed into portfolios, trade flow, and benchmark-ready watchlists.
+          </p>
         </div>
-        <h1>Trade With Congress</h1>
-        <p className="lede">
-          Search government officials, filings, and securities from one place.
-          This is now the start of the real official-first and ticker-first
-          browsing flow, not just a landing-page scaffold.
-        </p>
-        <form className="search-shell" onSubmit={(event) => void handleSearchSubmit(event)}>
-          <input
-            className="search-input"
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search Nancy Pelosi, NVDA, or Wells Fargo"
-            aria-label="Search filings, officials, or securities"
-          />
-          <button className="search-button" type="submit">
-            Search
-          </button>
-        </form>
-        <p className="search-caption">
-          Universal lookup is versioned under <code>/api/v1/search</code>.
-          Official and ticker views are now shareable via URL query state.
-        </p>
-      </section>
+
+        <div className="topbar-meta">
+          <nav className="pill-row" aria-label="Primary views">
+            <button
+              className={view.kind === 'overview' ? 'pill pill-active' : 'pill'}
+              type="button"
+              onClick={() => navigateToView({ kind: 'overview' })}
+            >
+              Overview
+            </button>
+            <span className="pill pill-muted">House live</span>
+            <span className="pill pill-muted">Senate next</span>
+            <span className="pill pill-muted">API {dashboardState.apiVersion}</span>
+          </nav>
+
+          <form className="command-form" onSubmit={(event) => void handleSearchSubmit(event)}>
+            <input
+              className="command-input"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search Pelosi, NVDA, Microsoft, House..."
+              aria-label="Search officials or tickers"
+            />
+            <button className="command-button" type="submit">Search</button>
+          </form>
+        </div>
+      </header>
 
       <SearchResultsPanel
         searchState={searchState}
@@ -222,21 +265,21 @@ function App() {
         onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
       />
 
-      <DetailPanel
-        detailState={detailState}
-        onBack={() => navigateToView({ kind: 'overview' })}
-        onOfficialSelect={(officialId) => navigateToView({ kind: 'official', officialId })}
-        onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
-      />
-
       {view.kind === 'overview' ? (
-        <OverviewGrid
-          apiState={apiState}
+        <OverviewView
+          dashboardState={dashboardState}
           status={status}
           onOfficialSelect={(officialId) => navigateToView({ kind: 'official', officialId })}
           onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
         />
-      ) : null}
+      ) : (
+        <DetailSurface
+          detailState={detailState}
+          onBack={() => navigateToView({ kind: 'overview' })}
+          onOfficialSelect={(officialId) => navigateToView({ kind: 'official', officialId })}
+          onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
+        />
+      )}
     </main>
   )
 }
@@ -259,179 +302,307 @@ function SearchResultsPanel({
     return null
   }
 
-  const isEmpty =
-    searchStatus === 'ready' &&
-    searchState.officials.length === 0 &&
-    searchState.tickers.length === 0
-
   return (
-    <section className="panel search-results">
-      <div className="panel-header">
-        <h2>Search results</h2>
-        {searchState.query !== '' ? <span>{searchState.query}</span> : null}
+    <section className="search-surface">
+      <div className="surface-heading">
+        <span className="section-kicker">Universal search</span>
+        <h2>{searchState.query === '' ? 'Search the disclosure graph' : searchState.query}</h2>
       </div>
 
-      {searchStatus === 'loading' ? <p>Searching officials and securities…</p> : null}
-
+      {searchStatus === 'loading' ? <p className="muted-copy">Searching officials and issuers…</p> : null}
       {searchStatus === 'error' ? (
-        <p>Enter at least two characters and make sure the read API is running.</p>
+        <p className="muted-copy">Enter at least two characters to search officials and tickers.</p>
       ) : null}
 
-      {isEmpty ? <p>No matches found for that query.</p> : null}
+      {searchStatus === 'ready' ? (
+        <div className="search-grid">
+          <article className="surface-card">
+            <div className="surface-heading compact">
+              <span className="section-kicker">Officials</span>
+              <h3>{searchState.officials.length}</h3>
+            </div>
+            <ul className="command-list">
+              {searchState.officials.map((official) => (
+                <li key={official.officialId}>
+                  <button
+                    className="command-list-button"
+                    type="button"
+                    onClick={() => onOfficialSelect(official.officialId)}
+                  >
+                    <span>
+                      <strong>{official.displayName}</strong>
+                      <small>
+                        {official.chamber} · {official.stateCode ?? 'n/a'} · alias {official.matchedAlias}
+                      </small>
+                    </span>
+                    <span className="metric-inline">
+                      {official.positionCount} holdings · {official.transactionCount} trades
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </article>
 
-      {searchStatus === 'ready' && searchState.officials.length > 0 ? (
-        <div className="search-group">
-          <h3>Officials</h3>
-          <ul className="summary-list">
-            {searchState.officials.map((official) => (
-              <ResultRow
-                key={official.officialId}
-                title={official.displayName}
-                subtitle={`${official.chamber} · ${official.stateCode ?? 'n/a'} · alias match: ${official.matchedAlias}`}
-                metric={`${official.positionCount} holdings · ${official.transactionCount} trades`}
-                onClick={() => onOfficialSelect(official.officialId)}
-              />
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {searchStatus === 'ready' && searchState.tickers.length > 0 ? (
-        <div className="search-group">
-          <h3>Securities</h3>
-          <ul className="summary-list">
-            {searchState.tickers.map((ticker) => (
-              <ResultRow
-                key={ticker.ticker}
-                title={ticker.ticker}
-                subtitle={`${ticker.representativeAssetName} · matched on ${ticker.matchedField}`}
-                metric={`${ticker.transactionCount} trades · ${ticker.holderCount} holders`}
-                onClick={() => onTickerSelect(ticker.ticker)}
-              />
-            ))}
-          </ul>
+          <article className="surface-card">
+            <div className="surface-heading compact">
+              <span className="section-kicker">Tickers</span>
+              <h3>{searchState.tickers.length}</h3>
+            </div>
+            <ul className="command-list">
+              {searchState.tickers.map((ticker) => (
+                <li key={ticker.ticker}>
+                  <button
+                    className="command-list-button"
+                    type="button"
+                    onClick={() => onTickerSelect(ticker.ticker)}
+                  >
+                    <span>
+                      <strong>{ticker.ticker}</strong>
+                      <small>
+                        {ticker.representativeAssetName} · match {ticker.matchedField}
+                      </small>
+                    </span>
+                    <span className="metric-inline">
+                      {ticker.transactionCount} trades · {ticker.holderCount} holders
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </article>
         </div>
       ) : null}
     </section>
   )
 }
 
-interface OverviewGridProps {
-  apiState: ApiState
+interface OverviewViewProps {
+  dashboardState: DashboardState
   status: LoadStatus
   onOfficialSelect: (officialId: string) => void
   onTickerSelect: (ticker: string) => void
 }
 
-function OverviewGrid({
-  apiState,
+function OverviewView({
+  dashboardState,
   status,
   onOfficialSelect,
   onTickerSelect,
-}: OverviewGridProps) {
+}: OverviewViewProps) {
+  const overviewSeries = buildOverviewSeries(dashboardState.overview)
+  const momentum = relativeOverviewReturn(dashboardState.overview)
+
   return (
-    <section className="grid">
-      <article className="panel">
-        <h2>Top officials</h2>
-        {status === 'error' ? (
-          <p>
-            The versioned read API is not reachable yet. Start <code>make dev</code>{' '}
-            to bring up <code>/api/v1</code> alongside Vite.
+    <section className="overview-layout">
+      <aside className="rail-column">
+        <section className="hero-surface">
+          <span className="section-kicker">Congressional trading desk</span>
+          <h1>Portfolios and trade flow, indexed from public filings.</h1>
+          <p className="muted-copy">
+            Inspect members, trace any ticker back to filers, and keep every view tied to delayed disclosure records.
           </p>
-        ) : (
-          <ul className="summary-list">
-            {apiState.topOfficials.map((official) => (
-              <ResultRow
-                key={official.officialId}
-                title={official.displayName}
-                subtitle={`${official.chamber} · ${official.stateCode ?? 'n/a'}`}
-                metric={`${official.positionCount} holdings · ${official.transactionCount} trades`}
-                onClick={() => onOfficialSelect(official.officialId)}
-              />
+        </section>
+
+        <SurfaceCard
+          kicker="Market surface"
+          title={latestActivityLabel(dashboardState.overview)}
+          description="Benchmark panels are already part of the layout. Live S&P price history is the next data feed."
+        />
+
+        <SurfaceCard kicker="Sectors" title="Explore by thesis">
+          <div className="pill-cloud">
+            {STATIC_SECTORS.map((sector) => (
+              <span key={sector} className="pill pill-muted">
+                {sector}
+              </span>
             ))}
-          </ul>
-        )}
-      </article>
-      <article className="panel">
-        <h2>Top tickers</h2>
-        {status === 'error' ? (
-          <p>Read API data is unavailable.</p>
-        ) : (
-          <ul className="summary-list">
-            {apiState.topTickers.map((ticker) => (
-              <ResultRow
-                key={ticker.ticker}
-                title={ticker.ticker}
-                subtitle={ticker.representativeAssetName}
-                metric={`${ticker.transactionCount} trades · ${ticker.tradingOfficialCount} officials`}
-                onClick={() => onTickerSelect(ticker.ticker)}
-              />
+          </div>
+        </SurfaceCard>
+
+        <SurfaceCard kicker="Asset types" title="Filter surface">
+          <div className="pill-cloud">
+            {STATIC_ASSET_TYPES.map((assetType) => (
+              <span key={assetType} className="pill pill-muted">
+                {assetType}
+              </span>
             ))}
-          </ul>
-        )}
-      </article>
-      <article className="panel">
-        <h2>Versioned contract</h2>
-        <p>
-          The first read endpoints now live under <code>/api/v1</code>. That
-          keeps future breaking changes on a clean major-version boundary
-          instead of reshaping routes in place.
-        </p>
-      </article>
+          </div>
+        </SurfaceCard>
+      </aside>
+
+      <div className="overview-stage">
+        <section className="metric-grid">
+          <MetricCard
+            label="Tracked officials"
+            value={formatInteger(dashboardState.overview.trackedOfficials)}
+            tone="lime"
+            detail="House disclosures indexed"
+          />
+          <MetricCard
+            label="Parsed trades"
+            value={formatInteger(dashboardState.overview.trackedTrades)}
+            tone="coral"
+            detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings across the graph`}
+          />
+          <MetricCard
+            label="Active holders"
+            value={formatInteger(dashboardState.overview.activeHolders)}
+            tone="violet"
+            detail={`${formatInteger(dashboardState.overview.trackedAssets)} canonical assets`}
+          />
+          <MetricCard
+            label="Flow delta"
+            value={formatSignedPercent(momentum)}
+            tone="neutral"
+            detail="Disclosure-weighted activity index"
+          />
+        </section>
+
+        <section className="showcase-grid">
+          <article className="surface-card showcase-primary">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">Performance surface</span>
+                <h2>Congressional activity vs S&amp;P benchmark</h2>
+              </div>
+              <span className="note-pill">S&amp;P feed next</span>
+            </div>
+            <p className="muted-copy">
+              Disclosure activity is live now. The comparison lane is intentionally reserved for SPY/S&amp;P price history once the market feed lands.
+            </p>
+            <TrendChart
+              points={overviewSeries}
+              label="Congress activity"
+              tone="coral"
+              pendingBenchmarkLabel="S&P 500 feed pending"
+            />
+          </article>
+
+          <div className="showcase-side">
+            <article className="surface-card">
+              <div className="surface-heading compact">
+                <span className="section-kicker">Portfolio leaders</span>
+                <h3>Watchlist</h3>
+              </div>
+              <ul className="leader-list">
+                {dashboardState.topOfficials.map((official, index) => (
+                  <li key={official.officialId}>
+                    <button
+                      className="leader-button"
+                      type="button"
+                      onClick={() => onOfficialSelect(official.officialId)}
+                    >
+                      <span className="leader-rank">{String(index + 1).padStart(2, '0')}</span>
+                      <span>
+                        <strong>{official.displayName}</strong>
+                        <small>
+                          {official.party ?? 'N/A'} · {official.chamber} · {official.stateCode ?? 'n/a'}
+                        </small>
+                      </span>
+                      <span className="metric-inline">
+                        {official.positionCount} holdings
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="surface-card">
+              <div className="surface-heading compact">
+                <span className="section-kicker">Most traded issuers</span>
+                <h3>Ticker flow</h3>
+              </div>
+              <ul className="ticker-list">
+                {dashboardState.topTickers.map((ticker) => (
+                  <li key={ticker.ticker}>
+                    <button
+                      className="ticker-list-button"
+                      type="button"
+                      onClick={() => onTickerSelect(ticker.ticker)}
+                    >
+                      <span>
+                        <strong>{ticker.ticker}</strong>
+                        <small>{ticker.representativeAssetName}</small>
+                      </span>
+                      <span className="metric-inline">
+                        {ticker.transactionCount} trades
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">Recent disclosures</span>
+              <h2>Latest parsed trade flow</h2>
+            </div>
+            {status === 'error' ? <span className="note-pill note-pill-error">API offline</span> : null}
+          </div>
+          <RecentTradeTable
+            trades={dashboardState.overview.recentTrades}
+            onOfficialSelect={onOfficialSelect}
+            onTickerSelect={onTickerSelect}
+          />
+        </article>
+      </div>
     </section>
   )
 }
 
-interface DetailPanelProps {
+interface DetailSurfaceProps {
   detailState: DetailState
   onBack: () => void
   onOfficialSelect: (officialId: string) => void
   onTickerSelect: (ticker: string) => void
 }
 
-function DetailPanel({
+function DetailSurface({
   detailState,
   onBack,
   onOfficialSelect,
   onTickerSelect,
-}: DetailPanelProps) {
-  if (detailState.status === 'idle') {
-    return null
-  }
-
+}: DetailSurfaceProps) {
   if (detailState.status === 'loading') {
     return (
-      <section className="panel detail-panel">
-        <button className="back-button" type="button" onClick={onBack}>
-          Back to overview
-        </button>
-        <p>Loading the {detailState.view.kind} view…</p>
+      <section className="detail-layout">
+        <SurfaceCard kicker="Loading" title={`Opening ${detailState.view.kind} desk`}>
+          <p className="muted-copy">Pulling holdings, trades, and visual state from the read API.</p>
+        </SurfaceCard>
       </section>
     )
   }
 
   if (detailState.status === 'error') {
     return (
-      <section className="panel detail-panel">
-        <button className="back-button" type="button" onClick={onBack}>
-          Back to overview
-        </button>
-        <p>
-          The requested {detailState.view.kind} page could not be loaded from the
-          current <code>/api/v1</code> data.
-        </p>
+      <section className="detail-layout">
+        <SurfaceCard kicker="Unavailable" title="This view could not be loaded">
+          <button className="text-button" type="button" onClick={onBack}>
+            Back to overview
+          </button>
+        </SurfaceCard>
       </section>
     )
   }
 
+  if (detailState.status !== 'ready') {
+    return null
+  }
+
   return detailState.view.kind === 'official' ? (
-    <OfficialDetailPanel
+    <OfficialDetailView
       detail={detailState.data as OfficialDetail}
       onBack={onBack}
       onTickerSelect={onTickerSelect}
     />
   ) : (
-    <TickerDetailPanel
+    <TickerDetailView
       detail={detailState.data as TickerDetail}
       onBack={onBack}
       onOfficialSelect={onOfficialSelect}
@@ -440,307 +611,720 @@ function DetailPanel({
   )
 }
 
-interface OfficialDetailPanelProps {
+interface OfficialDetailViewProps {
   detail: OfficialDetail
   onBack: () => void
   onTickerSelect: (ticker: string) => void
 }
 
-function OfficialDetailPanel({
+function OfficialDetailView({
   detail,
   onBack,
   onTickerSelect,
-}: OfficialDetailPanelProps) {
-  const { summary, portfolio, trades } = detail
+}: OfficialDetailViewProps) {
+  const tradeSeries = buildMonthlyTradeSeries(detail.trades)
+  const portfolioExposure = buildPortfolioExposure(detail.portfolio)
+  const topHoldings = buildPortfolioExposure(detail.portfolio, 6)
+  const assetTypeBreakdown = buildAssetTypeBreakdown(detail.portfolio)
+  const tradeTypes = buildTradeTypeBreakdown(detail.trades)
+  const delayDays = averageFilingDelayDays(detail.trades)
+  const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
+  const hasTradeHistory = detail.trades.length > 0
+  const issuerCount = countDistinct(
+    detail.portfolio.map((position) => position.issuerName ?? position.ticker ?? position.assetName),
+  )
+  const latestProfileDate =
+    detail.summary.latestTransactionDate ??
+    detail.summary.latestPositionFilingDate ??
+    detail.summary.latestFilingDate
+  const profileInitials = buildInitials(detail.summary.displayName)
 
   return (
-    <section className="panel detail-panel">
-      <button className="back-button" type="button" onClick={onBack}>
-        Back to overview
-      </button>
+    <section className="detail-layout detail-layout-official">
+      <aside className="profile-column">
+        <article className="profile-card profile-card-official">
+          <button className="text-button" type="button" onClick={onBack}>
+            Back to overview
+          </button>
+          <div className="profile-avatar" aria-hidden="true">
+            <span>{profileInitials}</span>
+          </div>
+          <span className="section-kicker">Selected member</span>
+          <h1 className="profile-name">{detail.summary.displayName}</h1>
+          <p className="profile-meta">{formatOfficialMeta(detail.summary)}</p>
 
-      <header className="detail-header">
-        <div>
-          <div className="eyebrow detail-eyebrow">Official profile</div>
-          <h2>{summary.displayName}</h2>
-          <p className="detail-meta">{formatOfficialMeta(summary)}</p>
-        </div>
-        <div className="stat-grid">
-          <StatCard label="Latest holdings" value={String(summary.positionCount)} />
-          <StatCard label="Filed trades" value={String(summary.transactionCount)} />
-          <StatCard
-            label="Latest PTR"
-            value={formatDate(summary.latestPtrFilingDate) ?? 'n/a'}
+          <div className="profile-stat-grid">
+            <MetricStat label="Holdings" value={formatInteger(detail.summary.positionCount)} />
+            <MetricStat label="Trades" value={formatInteger(detail.summary.transactionCount)} />
+            <MetricStat
+              label="Est. volume"
+              value={formatCompactCurrency(estimatedVolume)}
+            />
+            <MetricStat
+              label="Last activity"
+              value={formatDate(latestProfileDate) ?? 'n/a'}
+            />
+          </div>
+
+          <div className="profile-rail-meta">
+            <div>
+              <span>Profile type</span>
+              <strong>{detail.summary.officialType}</strong>
+            </div>
+            <div>
+              <span>Latest filing</span>
+              <strong>{formatDate(detail.summary.latestFilingDate) ?? 'n/a'}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="surface-card rail-compact">
+          <div className="surface-heading compact">
+            <span className="section-kicker">Top disclosed positions</span>
+            <h3>{topHoldings.length}</h3>
+          </div>
+          <BreakdownBarList
+            segments={topHoldings}
+            formatter={(value) => formatCompactCurrency(value)}
           />
+        </article>
+      </aside>
+
+      <div className="detail-stage">
+        <div className="detail-toolbar">
+          <div className="detail-toolbar-copy">
+            <span className="section-kicker">Official desk</span>
+            <h2>{detail.summary.displayName}</h2>
+          </div>
+          <div className="detail-toolbar-meta">
+            <span className="pill pill-muted">{formatInteger(detail.summary.positionCount)} positions</span>
+            <span className="pill pill-muted">{formatInteger(issuerCount)} issuers</span>
+            <span className="pill pill-muted">Benchmark next</span>
+          </div>
         </div>
-      </header>
 
-      <div className="detail-grid">
-        <article className="detail-section">
-          <div className="section-header">
-            <h3>Latest disclosed portfolio</h3>
-            <span>{summary.latestPositionFilingDate ?? 'date unavailable'}</span>
+        <section className="metric-grid">
+          <MetricCard
+            label="Trades"
+            value={formatInteger(detail.summary.transactionCount)}
+            tone="neutral"
+            detail="Parsed transaction rows"
+          />
+          <MetricCard
+            label="Filings"
+            value={formatInteger(detail.summary.filingCount)}
+            tone="coral"
+            detail="Indexed disclosure filings"
+          />
+          <MetricCard
+            label="Est. volume"
+            value={formatCompactCurrency(estimatedVolume)}
+            tone="violet"
+            detail="Midpoint estimate from trades"
+          />
+          <MetricCard
+            label="Issuers"
+            value={formatInteger(issuerCount)}
+            tone="lime"
+            detail="Distinct holdings or traded issuers"
+          />
+        </section>
+
+        <section className="showcase-grid official-showcase-grid">
+          <article className="surface-card showcase-primary">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">
+                  {hasTradeHistory ? 'Trade cadence' : 'Portfolio concentration'}
+                </span>
+                <h2>
+                  {hasTradeHistory
+                    ? 'Disclosed trading flow over time'
+                    : 'Largest disclosed positions'}
+                </h2>
+              </div>
+              <span className="note-pill">
+                {hasTradeHistory
+                  ? `Avg lag ${delayDays === null ? 'n/a' : `${delayDays}d`}`
+                  : `${detail.portfolio.length} disclosed rows`}
+              </span>
+            </div>
+            {hasTradeHistory ? (
+              <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="lime" />
+            ) : (
+              <BreakdownBarList
+                segments={topHoldings}
+                formatter={(value) => formatCompactCurrency(value)}
+              />
+            )}
+          </article>
+
+          <div className="showcase-side">
+            <article className="surface-card">
+              <div className="surface-heading compact">
+                <span className="section-kicker">Portfolio mix</span>
+                <h3>{detail.portfolio.length} rows</h3>
+              </div>
+              <RingChart segments={portfolioExposure} centerLabel="positions" />
+            </article>
+
+            <article className="surface-card">
+              <div className="surface-heading compact">
+                <span className="section-kicker">
+                  {hasTradeHistory ? 'Trade mix' : 'Asset classes'}
+                </span>
+                <h3>{hasTradeHistory ? detail.trades.length : detail.portfolio.length}</h3>
+              </div>
+              <RingChart
+                segments={hasTradeHistory ? tradeTypes : assetTypeBreakdown}
+                centerLabel={hasTradeHistory ? 'trades' : 'classes'}
+              />
+            </article>
           </div>
-          {portfolio.length > 0 ? (
-            <ul className="detail-list">
-              {portfolio.map((position) => (
-                <li key={position.positionId} className="detail-list-item">
-                  <div className="detail-primary">
-                    <div>
-                      <strong>{position.assetName}</strong>
-                      <small>
-                        {position.ticker ?? position.assetType} · {position.ownerType} ·{' '}
-                        {position.confidenceLabel}
-                      </small>
-                    </div>
-                    <span className="summary-metric">
-                      {formatAmountRange(position.amountRangeLabel)}
-                    </span>
-                  </div>
-                  <div className="detail-secondary">
-                    <span>as of {formatDate(position.asOfFilingDate) ?? 'n/a'}</span>
-                    {position.ticker !== null ? (
-                      <button
-                        className="inline-link"
-                        type="button"
-                        onClick={() => onTickerSelect(position.ticker!)}
-                      >
-                        View {position.ticker}
-                      </button>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No holdings are materialized for this official yet.</p>
-          )}
+        </section>
+
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">Portfolio</span>
+              <h2>Latest disclosed holdings</h2>
+            </div>
+            <span className="note-pill">{detail.portfolio.length} positions</span>
+          </div>
+          <HoldingsTable positions={detail.portfolio} onTickerSelect={onTickerSelect} />
         </article>
 
-        <article className="detail-section">
-          <div className="section-header">
-            <h3>Recent trade activity</h3>
-            <span>{trades.length} latest rows</span>
-          </div>
-          {trades.length > 0 ? (
-            <ul className="detail-list">
-              {trades.map((trade) => (
-                <li key={trade.transactionId} className="detail-list-item">
-                  <div className="detail-primary">
-                    <div>
-                      <strong>{trade.assetName}</strong>
-                      <small>
-                        {trade.transactionType} · {trade.ownerType} · filed{' '}
-                        {formatDate(trade.filingDate) ?? 'n/a'}
-                      </small>
-                    </div>
-                    <span className="summary-metric">
-                      {formatAmountRange(trade.amountRangeLabel)}
-                    </span>
-                  </div>
-                  <div className="detail-secondary">
-                    <span>{formatDate(trade.activityDate) ?? 'n/a'}</span>
-                    {trade.ticker !== null ? (
-                      <button
-                        className="inline-link"
-                        type="button"
-                        onClick={() => onTickerSelect(trade.ticker!)}
-                      >
-                        Open {trade.ticker}
-                      </button>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No trade activity has been parsed for this official yet.</p>
-          )}
-        </article>
+        {hasTradeHistory ? (
+          <article className="surface-card">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">Recent trades</span>
+                <h2>Parsed transaction timeline</h2>
+              </div>
+              <span className="note-pill">
+                {delayDays === null ? 'Lag unavailable' : `Avg lag ${delayDays}d`}
+              </span>
+            </div>
+            <TradeTable trades={detail.trades} onTickerSelect={onTickerSelect} />
+          </article>
+        ) : (
+          <SurfaceCard kicker="Recent trades" title="No parsed transaction rows yet">
+            <p className="muted-copy">
+              This profile currently resolves to holdings-only disclosure data. PTR-backed trade history will appear here once parsed transactions exist for this member.
+            </p>
+          </SurfaceCard>
+        )}
       </div>
     </section>
   )
 }
 
-interface TickerDetailPanelProps {
+interface TickerDetailViewProps {
   detail: TickerDetail
   onBack: () => void
   onOfficialSelect: (officialId: string) => void
   onTickerSelect: (ticker: string) => void
 }
 
-function TickerDetailPanel({
+function TickerDetailView({
   detail,
   onBack,
   onOfficialSelect,
   onTickerSelect,
-}: TickerDetailPanelProps) {
-  const { summary, holders, trades } = detail
+}: TickerDetailViewProps) {
+  const tradeSeries = buildMonthlyTradeSeries(detail.trades)
+  const partyBreakdown = buildPartyBreakdown(detail.trades)
+  const tradeTypes = buildTradeTypeBreakdown(detail.trades)
+  const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
+  const averageLag = averageFilingDelayDays(detail.trades)
 
   return (
-    <section className="panel detail-panel">
-      <button className="back-button" type="button" onClick={onBack}>
-        Back to overview
-      </button>
-
-      <header className="detail-header">
-        <div>
-          <div className="eyebrow detail-eyebrow">Ticker view</div>
-          <h2>{summary.ticker}</h2>
-          <p className="detail-meta">
-            {summary.representativeAssetName}
-            {summary.representativeIssuerName !== null
-              ? ` · ${summary.representativeIssuerName}`
-              : ''}
+    <section className="detail-layout">
+      <aside className="profile-column">
+        <article className="profile-card">
+          <button className="text-button" type="button" onClick={onBack}>
+            Back to overview
+          </button>
+          <span className="section-kicker">Ticker intelligence</span>
+          <h1 className="profile-name">{detail.summary.ticker}</h1>
+          <p className="profile-meta">{detail.summary.representativeAssetName}</p>
+          <p className="profile-submeta">
+            {detail.summary.representativeIssuerName ?? detail.summary.representativeAssetType}
           </p>
-        </div>
-        <div className="stat-grid">
-          <StatCard label="Trades" value={String(summary.transactionCount)} />
-          <StatCard label="Officials" value={String(summary.tradingOfficialCount)} />
-          <StatCard
-            label="Holders"
-            value={String(summary.holderCount)}
+
+          <div className="profile-stat-grid">
+            <MetricStat label="Trades" value={formatInteger(detail.summary.transactionCount)} />
+            <MetricStat label="Officials" value={formatInteger(detail.summary.tradingOfficialCount)} />
+            <MetricStat label="Holders" value={formatInteger(detail.summary.holderCount)} />
+            <MetricStat label="Est. volume" value={formatCompactCurrency(estimatedVolume)} />
+          </div>
+        </article>
+
+        <SurfaceCard kicker="Benchmarking" title="S&P 500 overlay">
+          <p className="muted-copy">
+            This ticker surface is designed to compare issuer trade flow against the broader market. The SPY/S&amp;P price-history layer is still pending.
+          </p>
+        </SurfaceCard>
+
+        <SurfaceCard kicker="Party split" title="Who is trading it">
+          <RingChart segments={partyBreakdown} centerLabel="filers" />
+        </SurfaceCard>
+      </aside>
+
+      <div className="detail-stage">
+        <section className="metric-grid">
+          <MetricCard
+            label="First trade"
+            value={formatDate(detail.summary.firstTransactionDate) ?? 'n/a'}
+            tone="neutral"
+            detail="Earliest parsed trade"
           />
-        </div>
-      </header>
+          <MetricCard
+            label="Latest trade"
+            value={formatDate(detail.summary.latestTransactionDate) ?? 'n/a'}
+            tone="coral"
+            detail="Latest parsed trade"
+          />
+          <MetricCard
+            label="Latest holder filing"
+            value={formatDate(detail.summary.latestPositionFilingDate) ?? 'n/a'}
+            tone="violet"
+            detail="Most recent holdings snapshot"
+          />
+          <MetricCard
+            label="Avg. filing lag"
+            value={averageLag === null ? 'n/a' : `${averageLag}d`}
+            tone="lime"
+            detail="Trade date to filed date"
+          />
+        </section>
 
-      <div className="detail-grid">
-        <article className="detail-section">
-          <div className="section-header">
-            <h3>Latest disclosed holders</h3>
-            <span>{summary.latestPositionFilingDate ?? 'date unavailable'}</span>
+        <section className="showcase-grid">
+          <article className="surface-card showcase-primary">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">Ticker flow</span>
+                <h2>Disclosed trading interest over time</h2>
+              </div>
+              <button className="text-button" type="button" onClick={() => onTickerSelect(detail.summary.ticker)}>
+                Refresh
+              </button>
+            </div>
+            <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="coral" />
+          </article>
+
+          <article className="surface-card">
+            <div className="surface-heading compact">
+              <span className="section-kicker">Action mix</span>
+              <h3>{detail.trades.length} rows</h3>
+            </div>
+            <RingChart segments={tradeTypes} centerLabel="actions" />
+          </article>
+        </section>
+
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">Latest holders</span>
+              <h2>Who still appears exposed</h2>
+            </div>
+            <span className="note-pill">{detail.holders.length} holders</span>
           </div>
-          {holders.length > 0 ? (
-            <ul className="detail-list">
-              {holders.map((holder) => (
-                <li key={holder.positionId} className="detail-list-item">
-                  <div className="detail-primary">
-                    <div>
-                      <strong>{holder.officialDisplayName}</strong>
-                      <small>
-                        {holder.chamber} · {holder.stateCode ?? 'n/a'} · {holder.ownerType}
-                      </small>
-                    </div>
-                    <span className="summary-metric">
-                      {formatAmountRange(holder.amountRangeLabel)}
-                    </span>
-                  </div>
-                  <div className="detail-secondary">
-                    <span>{holder.confidenceLabel}</span>
-                    <button
-                      className="inline-link"
-                      type="button"
-                      onClick={() => onOfficialSelect(holder.officialId)}
-                    >
-                      Open official
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No current holders are materialized for this ticker yet.</p>
-          )}
+          <HolderTable holders={detail.holders} onOfficialSelect={onOfficialSelect} />
         </article>
 
-        <article className="detail-section">
-          <div className="section-header">
-            <h3>Recent trade activity</h3>
-            <span>{trades.length} latest rows</span>
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">Trade ledger</span>
+              <h2>Every parsed ticker-level trade row</h2>
+            </div>
+            <span className="note-pill">{detail.summary.ticker}</span>
           </div>
-          {trades.length > 0 ? (
-            <ul className="detail-list">
-              {trades.map((trade) => (
-                <li key={trade.transactionId} className="detail-list-item">
-                  <div className="detail-primary">
-                    <div>
-                      <strong>{trade.officialDisplayName}</strong>
-                      <small>
-                        {trade.transactionType} · {trade.ownerType} · filed{' '}
-                        {formatDate(trade.filingDate) ?? 'n/a'}
-                      </small>
-                    </div>
-                    <span className="summary-metric">
-                      {formatAmountRange(trade.amountRangeLabel)}
-                    </span>
-                  </div>
-                  <div className="detail-secondary">
-                    <span>{formatDate(trade.activityDate) ?? 'n/a'}</span>
-                    <button
-                      className="inline-link"
-                      type="button"
-                      onClick={() => onOfficialSelect(trade.officialId)}
-                    >
-                      Open official
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No trade activity has been parsed for this ticker yet.</p>
-          )}
+          <TickerTradeTable trades={detail.trades} onOfficialSelect={onOfficialSelect} />
         </article>
-      </div>
-
-      <div className="detail-footer">
-        <button
-          className="inline-link"
-          type="button"
-          onClick={() => onTickerSelect(summary.ticker)}
-        >
-          Refresh this ticker view
-        </button>
       </div>
     </section>
   )
 }
 
-interface ResultRowProps {
+interface SurfaceCardProps {
+  kicker: string
   title: string
-  subtitle: string
-  metric: string
-  onClick: () => void
+  description?: string
+  children?: React.ReactNode
 }
 
-function ResultRow({ title, subtitle, metric, onClick }: ResultRowProps) {
+function SurfaceCard({ kicker, title, description, children }: SurfaceCardProps) {
   return (
-    <li className="summary-item">
-      <button className="summary-link" type="button" onClick={onClick}>
-        <span>
-          <strong>{title}</strong>
-          <small>{subtitle}</small>
-        </span>
-        <span className="summary-metric">{metric}</span>
-      </button>
-    </li>
-  )
-}
-
-interface StatCardProps {
-  label: string
-  value: string
-}
-
-function StatCard({ label, value }: StatCardProps) {
-  return (
-    <article className="stat-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
+    <article className="surface-card">
+      <div className="surface-heading">
+        <div>
+          <span className="section-kicker">{kicker}</span>
+          <h2>{title}</h2>
+        </div>
+      </div>
+      {description !== undefined ? <p className="muted-copy">{description}</p> : null}
+      {children}
     </article>
   )
 }
 
+interface MetricCardProps {
+  label: string
+  value: string
+  detail: string
+  tone: 'lime' | 'coral' | 'violet' | 'neutral'
+}
+
+function MetricCard({ label, value, detail, tone }: MetricCardProps) {
+  return (
+    <article className={`metric-card metric-${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </article>
+  )
+}
+
+interface MetricStatProps {
+  label: string
+  value: string
+}
+
+function MetricStat({ label, value }: MetricStatProps) {
+  return (
+    <div className="metric-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+interface BreakdownBarListProps {
+  segments: Array<{ label: string; value: number }>
+  formatter: (value: number) => string
+}
+
+function BreakdownBarList({ segments, formatter }: BreakdownBarListProps) {
+  const values = segments.length > 0 ? segments : [{ label: 'No data', value: 0 }]
+  const maxValue = Math.max(...values.map((segment) => segment.value), 1)
+
+  return (
+    <ul className="bar-list">
+      {values.map((segment) => (
+        <li key={segment.label} className="bar-list-row">
+          <div className="bar-list-copy">
+            <strong>{segment.label}</strong>
+            <span>{formatter(segment.value)}</span>
+          </div>
+          <div className="bar-track" aria-hidden="true">
+            <span
+              className="bar-fill"
+              style={{ width: `${Math.max((segment.value / maxValue) * 100, 4)}%` }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+interface RecentTradeTableProps {
+  trades: OfficialTradeActivity[]
+  onOfficialSelect: (officialId: string) => void
+  onTickerSelect: (ticker: string) => void
+}
+
+function RecentTradeTable({
+  trades,
+  onOfficialSelect,
+  onTickerSelect,
+}: RecentTradeTableProps) {
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>Filed</th>
+          <th>Official</th>
+          <th>Asset</th>
+          <th>Action</th>
+          <th>Est. amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {trades.map((trade) => (
+          <tr key={trade.transactionId}>
+            <td>{formatDate(trade.filingDate) ?? 'n/a'}</td>
+            <td>
+              <button
+                className="table-link"
+                type="button"
+                onClick={() => onOfficialSelect(trade.officialId)}
+              >
+                {trade.officialDisplayName}
+              </button>
+            </td>
+            <td>
+              {trade.ticker !== null ? (
+                <button
+                  className="ticker-pill"
+                  type="button"
+                  onClick={() => onTickerSelect(trade.ticker!)}
+                >
+                  {trade.ticker}
+                </button>
+              ) : (
+                <span className="ticker-pill muted">{trade.assetType}</span>
+              )}{' '}
+              {trade.assetName}
+            </td>
+            <td>
+              <span className={`action-tag action-${normalizeActionTone(trade.transactionType)}`}>
+                {formatTradeAction(trade.transactionType)}
+              </span>
+            </td>
+            <td>{trade.amountRangeLabel}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+interface HoldingsTableProps {
+  positions: PortfolioPosition[]
+  onTickerSelect: (ticker: string) => void
+}
+
+function HoldingsTable({ positions, onTickerSelect }: HoldingsTableProps) {
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Owner</th>
+          <th>Est. amount</th>
+          <th>Confidence</th>
+          <th>As of</th>
+        </tr>
+      </thead>
+      <tbody>
+        {positions.map((position) => (
+          <tr key={position.positionId}>
+            <td>
+              <div className="table-primary">
+                <strong>{position.assetName}</strong>
+                {position.ticker !== null ? (
+                  <button
+                    className="ticker-pill"
+                    type="button"
+                    onClick={() => onTickerSelect(position.ticker!)}
+                  >
+                    {position.ticker}
+                  </button>
+                ) : (
+                  <span className="ticker-pill muted">{position.assetType}</span>
+                )}
+              </div>
+            </td>
+            <td>{position.ownerType}</td>
+            <td>{position.amountRangeLabel ?? 'n/a'}</td>
+            <td>{position.confidenceLabel}</td>
+            <td>{formatDate(position.asOfFilingDate) ?? 'n/a'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+interface TradeTableProps {
+  trades: OfficialTradeActivity[]
+  onTickerSelect: (ticker: string) => void
+}
+
+function TradeTable({ trades, onTickerSelect }: TradeTableProps) {
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Action</th>
+          <th>Traded</th>
+          <th>Filed</th>
+          <th>Delay</th>
+          <th>Est. amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {trades.map((trade) => (
+          <tr key={trade.transactionId}>
+            <td>
+              <div className="table-primary">
+                <strong>{trade.assetName}</strong>
+                {trade.ticker !== null ? (
+                  <button
+                    className="ticker-pill"
+                    type="button"
+                    onClick={() => onTickerSelect(trade.ticker!)}
+                  >
+                    {trade.ticker}
+                  </button>
+                ) : (
+                  <span className="ticker-pill muted">{trade.assetType}</span>
+                )}
+              </div>
+            </td>
+            <td>
+              <span className={`action-tag action-${normalizeActionTone(trade.transactionType)}`}>
+                {formatTradeAction(trade.transactionType)}
+              </span>
+            </td>
+            <td>{formatDate(trade.transactionDate) ?? 'n/a'}</td>
+            <td>{formatDate(trade.filingDate) ?? 'n/a'}</td>
+            <td>{formatDelay(trade.transactionDate, trade.filingDate)}</td>
+            <td>{trade.amountRangeLabel}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+interface HolderTableProps {
+  holders: TickerDetail['holders']
+  onOfficialSelect: (officialId: string) => void
+}
+
+function HolderTable({ holders, onOfficialSelect }: HolderTableProps) {
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>Official</th>
+          <th>Owner</th>
+          <th>Est. amount</th>
+          <th>Confidence</th>
+          <th>Snapshot</th>
+        </tr>
+      </thead>
+      <tbody>
+        {holders.map((holder) => (
+          <tr key={holder.positionId}>
+            <td>
+              <button
+                className="table-link"
+                type="button"
+                onClick={() => onOfficialSelect(holder.officialId)}
+              >
+                {holder.officialDisplayName}
+              </button>
+            </td>
+            <td>{holder.ownerType}</td>
+            <td>{holder.amountRangeLabel ?? 'n/a'}</td>
+            <td>{holder.confidenceLabel}</td>
+            <td>{formatDate(holder.asOfFilingDate) ?? 'n/a'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+interface TickerTradeTableProps {
+  trades: TickerDetail['trades']
+  onOfficialSelect: (officialId: string) => void
+}
+
+function TickerTradeTable({ trades, onOfficialSelect }: TickerTradeTableProps) {
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>Official</th>
+          <th>Action</th>
+          <th>Traded</th>
+          <th>Filed</th>
+          <th>Delay</th>
+          <th>Est. amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {trades.map((trade) => (
+          <tr key={trade.transactionId}>
+            <td>
+              <button
+                className="table-link"
+                type="button"
+                onClick={() => onOfficialSelect(trade.officialId)}
+              >
+                {trade.officialDisplayName}
+              </button>
+            </td>
+            <td>
+              <span className={`action-tag action-${normalizeActionTone(trade.transactionType)}`}>
+                {formatTradeAction(trade.transactionType)}
+              </span>
+            </td>
+            <td>{formatDate(trade.transactionDate) ?? 'n/a'}</td>
+            <td>{formatDate(trade.filingDate) ?? 'n/a'}</td>
+            <td>{formatDelay(trade.transactionDate, trade.filingDate)}</td>
+            <td>{trade.amountRangeLabel}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function createDetailStateForView(view: AppView): DetailState {
+  return view.kind === 'overview' ? { status: 'idle' } : { status: 'loading', view }
+}
+
+function buildInitials(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function countDistinct(values: Array<string | null>): number {
+  return new Set(values.filter((value): value is string => value !== null && value.trim() !== '')).size
+}
+
 function formatOfficialMeta(summary: OfficialSummary): string {
   const parts = [
+    summary.party,
     summary.chamber,
     summary.stateCode,
     summary.districtCode,
-    summary.party,
-    summary.isCurrent ? 'current' : 'not current',
   ].filter((value): value is string => value !== null && value !== '')
 
-  return parts.join(' · ')
+  return parts.join(' / ')
+}
+
+function formatCompactCurrency(value: number): string {
+  if (value === 0) {
+    return '$0'
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value)
+}
+
+function formatInteger(value: number): string {
+  return new Intl.NumberFormat().format(value)
+}
+
+function formatSignedPercent(value: number): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`
 }
 
 function formatDate(value: string | null): string | null {
@@ -755,16 +1339,34 @@ function formatDate(value: string | null): string | null {
   }).format(new Date(value))
 }
 
-function formatAmountRange(label: string | null): string {
-  return label ?? 'amount unavailable'
+function formatTradeAction(value: string): string {
+  return value.replaceAll('_', ' ')
+}
+
+function normalizeActionTone(value: string): 'buy' | 'sell' | 'neutral' {
+  const normalized = value.toLowerCase()
+  if (normalized.includes('buy') || normalized.includes('purchase')) {
+    return 'buy'
+  }
+  if (normalized.includes('sell') || normalized.includes('sale')) {
+    return 'sell'
+  }
+  return 'neutral'
+}
+
+function formatDelay(transactionDate: string | null, filingDate: string): string {
+  if (transactionDate === null) {
+    return 'n/a'
+  }
+
+  const tradedAt = new Date(transactionDate)
+  const filedAt = new Date(filingDate)
+  const days = Math.round((filedAt.getTime() - tradedAt.getTime()) / (1000 * 60 * 60 * 24))
+  return days < 0 ? 'n/a' : `${days}d`
 }
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError'
-}
-
-function createDetailStateForView(view: AppView): DetailState {
-  return view.kind === 'overview' ? { status: 'idle' } : { status: 'loading', view }
 }
 
 export default App
