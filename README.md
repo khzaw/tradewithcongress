@@ -6,6 +6,7 @@ For project intent, architecture decisions, current implementation status, and n
 
 ## Stack
 
+- `api/`: versioned Bun + Hono read API
 - `web/`: React + Vite + TypeScript
 - `ingest/`: Python worker and parsing pipeline
 - `db/`: Postgres bootstrap and future migrations
@@ -33,6 +34,7 @@ make dev
 
 That flow:
 - starts local Postgres with Docker Compose
+- starts the versioned read API on `http://localhost:8787/api/v1`
 - boots the Vite dev server
 - leaves the DB running for ingest work
 
@@ -64,6 +66,12 @@ Current page-facing read models in Postgres:
 - `ticker_trade_activity_vw`
 - `ticker_latest_holders_vw`
 
+Current HTTP API versioning rule:
+- first public read endpoints live under `/api/v1`
+- additive changes stay within `v1`
+- breaking route or response-contract changes move to a new `/api/v{major}` namespace
+- `BIGINT` ids are returned as strings from the API to avoid future precision issues in JS clients
+
 Re-run just the House PTR parser:
 
 ```bash
@@ -88,6 +96,12 @@ Run the ingest tests:
 make test-ingest
 ```
 
+Run the API tests:
+
+```bash
+make test-api
+```
+
 Stop local services:
 
 ```bash
@@ -97,6 +111,7 @@ make db-down
 ## Layout
 
 ```text
+api/      versioned read api
 web/      frontend app
 ingest/   python ingestion worker
 db/       sql bootstrap and migrations

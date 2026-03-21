@@ -41,6 +41,7 @@ Planned user-facing surfaces:
 
 Chosen stack:
 
+- read API: Bun + Hono
 - frontend: React + Vite + TypeScript
 - ingestion/parsing: Python
 - database: Postgres
@@ -60,6 +61,7 @@ Intentional non-decisions:
 ## Repo layout
 
 ```text
+api/      versioned read api
 web/      frontend app
 ingest/   python ingestion worker
 db/       bootstrap SQL and migrations
@@ -83,15 +85,17 @@ Day-to-day commands:
 make dev
 make migrate
 make ingest
+make test-api
 make test-ingest
 make db-down
 ```
 
 What they do:
 
-- `make dev`: starts local Postgres and the Vite dev server
+- `make dev`: starts local Postgres, the versioned read API, and the Vite dev server
 - `make migrate`: applies SQL migrations through the Python migration runner
 - `make ingest`: fetches the current-year House Clerk archive, syncs filing metadata, downloads referenced PDFs, parses House PTR trades, links normalized assets, and materializes latest text-based House holdings snapshots
+- `make test-api`: runs the Bun API test suite against an isolated transaction-backed database client
 - `make test-ingest`: runs the Python ingest test suite
 - `make db-down`: stops local Postgres
 
@@ -101,6 +105,7 @@ Current relevant environment variables:
 
 - `DATABASE_URL`
 - `DOCUMENT_STORAGE_DIR`
+- `API_PORT`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -117,6 +122,7 @@ data/documents/
 
 Completed foundation:
 
+- versioned Bun + Hono read API scaffold
 - repo scaffold for `web`, `ingest`, `db`, and `infra`
 - local Docker Compose Postgres workflow
 - Python migration runner
@@ -157,6 +163,8 @@ Current House ingestion behavior:
 - skips image-only or candidate-notice filings with explicit parse issues instead of failing the run
 - records `parse_runs` and `parse_issues` for PTR parsing
 - exposes official/ticker read models directly from Postgres for future API and UI work
+- serves the first public read endpoints under `/api/v1`
+- keeps HTTP `BIGINT` identifiers string-typed to avoid JS precision issues
 
 Validated local state as of 2026-03-21:
 
@@ -175,6 +183,16 @@ Validated local state as of 2026-03-21:
   - `ticker_summaries_vw`
   - `ticker_trade_activity_vw`
   - `ticker_latest_holders_vw`
+- HTTP API now exposes:
+  - `GET /api/v1/meta`
+  - `GET /api/v1/officials`
+  - `GET /api/v1/officials/:officialId`
+  - `GET /api/v1/officials/:officialId/portfolio`
+  - `GET /api/v1/officials/:officialId/trades`
+  - `GET /api/v1/tickers`
+  - `GET /api/v1/tickers/:ticker`
+  - `GET /api/v1/tickers/:ticker/trades`
+  - `GET /api/v1/tickers/:ticker/holders`
 - representative live-query outputs from the local 2026 data:
   - official summaries are currently led by holdings-heavy candidate/full disclosures such as `Matthew Sin` (`40` active positions)
   - ticker summaries are currently led by `MSFT` (`20` parsed transactions across `8` officials)
@@ -185,8 +203,8 @@ Not implemented yet:
 
 - Senate ingestion
 - portfolio reconstruction engine beyond schema design
-- public API layer
-- real frontend product pages beyond scaffold
+- search-by-name / search-by-ticker API flows beyond top-list and detail endpoints
+- real frontend product pages beyond the scaffolded landing page and live data preview
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
@@ -230,6 +248,8 @@ Important issues:
 - `KHZ-76` Set up frictionless local development with Docker Compose and hot reload
 - `KHZ-77` Provision the Oracle Cloud VM and production Docker host
 - `KHZ-78` Implement CI/CD for git-push deployment to the Oracle VM
+- `KHZ-168` Build the lightweight read API for official and ticker views
+- `KHZ-169` Define API versioning strategy for the read API
 
 Current status snapshot:
 
@@ -238,6 +258,8 @@ Current status snapshot:
 - `KHZ-56`: done
 - `KHZ-57`: in progress
 - `KHZ-73`: in progress
+- `KHZ-168`: in progress
+- `KHZ-169`: in progress
 
 When work changes the actual state of the project, update Linear comments/statuses in the same session.
 
@@ -263,7 +285,7 @@ Recent commits already on `master`:
 
 Immediate next work:
 
-1. Add a lightweight API/read layer on top of the official and ticker views.
+1. Add search endpoints and lookup-by-name/ticker flows on top of `/api/v1`.
 2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
 3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
 4. Add Senate ingestion after House parsing is stable.
@@ -283,6 +305,7 @@ If you are starting fresh:
 
 ```bash
 make migrate
+make test-api
 make test-ingest
 make ingest
 ```
