@@ -151,6 +151,39 @@ export interface TickerHolder {
   holderRank: number
 }
 
+export interface OfficialSearchResult {
+  kind: 'official'
+  officialId: string
+  displayName: string
+  chamber: string
+  officialType: string
+  stateCode: string | null
+  districtCode: string | null
+  party: string | null
+  matchedAlias: string
+  positionCount: number
+  transactionCount: number
+  score: number
+}
+
+export interface TickerSearchResult {
+  kind: 'ticker'
+  ticker: string
+  representativeAssetName: string
+  representativeIssuerName: string | null
+  representativeAssetType: string
+  transactionCount: number
+  holderCount: number
+  matchedField: string
+  score: number
+}
+
+export interface SearchResponse {
+  query: string
+  officials: OfficialSearchResult[]
+  tickers: TickerSearchResult[]
+}
+
 interface OfficialSummaryRow {
   official_id: NumericLike
   display_name: string
@@ -295,6 +328,31 @@ interface TickerHolderRow {
   holder_rank: NumericLike
 }
 
+interface OfficialSearchRow {
+  official_id: NumericLike
+  display_name: string
+  chamber: string
+  official_type: string
+  state_code: string | null
+  district_code: string | null
+  party: string | null
+  matched_alias: string
+  position_count: NumericLike
+  transaction_count: NumericLike
+  score: NumericLike
+}
+
+interface TickerSearchRow {
+  ticker: string
+  representative_asset_name: string
+  representative_issuer_name: string | null
+  representative_asset_type: string
+  transaction_count: NumericLike
+  holder_count: NumericLike
+  matched_field: string
+  score: NumericLike
+}
+
 export async function listOfficials(
   db: Queryable,
   limit: number,
@@ -435,6 +493,151 @@ export async function getTickerHolders(
   )
 
   return result.rows.map(mapTickerHolder)
+}
+
+export async function search(
+  db: Queryable,
+  query: string,
+  limit: number,
+): Promise<SearchResponse> {
+  const [officials, tickers] = await Promise.all([
+    searchOfficials(db, query, limit),
+    searchTickers(db, query, limit),
+  ])
+
+  return {
+    query,
+    officials,
+    tickers,
+  }
+}
+
+async function searchOfficials(
+  db: Queryable,
+  query: string,
+  limit: number,
+): Promise<OfficialSearchResult[]> {
+  const result = await db.query<OfficialSearchRow>(
+    `
+      WITH ranked_aliases AS (
+        SELECT
+          ops.official_id,
+          ops.display_name,
+          ops.chamber,
+          ops.official_type,
+          ops.state_code,
+          ops.district_code,
+          ops.party,
+          oa.alias AS matched_alias,
+          ops.position_count,
+          ops.transaction_count,
+          GREATEST(
+            CASE
+              WHEN oa.alias_normalized = lower($1) THEN 1.0
+              WHEN lower(ops.display_name) = lower($1) THEN 1.0
+              ELSE 0.0
+            END,
+            CASE
+              WHEN oa.alias_normalized LIKE lower($1) || '%' THEN 0.95
+              WHEN lower(ops.display_name) LIKE lower($1) || '%' THEN 0.95
+              ELSE 0.0
+            END,
+            similarity(oa.alias_normalized, lower($1)),
+            similarity(lower(ops.display_name), lower($1))
+          ) AS score
+        FROM official_profile_summaries_vw AS ops
+        JOIN official_aliases AS oa
+          ON oa.official_id = ops.official_id
+        WHERE oa.alias_normalized % lower($1)
+           OR lower(ops.display_name) % lower($1)
+           OR oa.alias_normalized LIKE '%' || lower($1) || '%'
+           OR lower(ops.display_name) LIKE '%' || lower($1) || '%'
+      ),
+      deduped AS (
+        SELECT DISTINCT ON (official_id)
+          official_id,
+          display_name,
+          chamber,
+          official_type,
+          state_code,
+          district_code,
+          party,
+          matched_alias,
+          position_count,
+          transaction_count,
+          score
+        FROM ranked_aliases
+        ORDER BY official_id, score DESC, matched_alias
+      )
+      SELECT
+        official_id,
+        display_name,
+        chamber,
+        official_type,
+        state_code,
+        district_code,
+        party,
+        matched_alias,
+        position_count,
+        transaction_count,
+        score
+      FROM deduped
+      ORDER BY score DESC, position_count DESC, transaction_count DESC, display_name
+      LIMIT $2
+    `,
+    [query, limit],
+  )
+
+  return result.rows.map(mapOfficialSearchResult)
+}
+
+async function searchTickers(
+  db: Queryable,
+  query: string,
+  limit: number,
+): Promise<TickerSearchResult[]> {
+  const result = await db.query<TickerSearchRow>(
+    `
+      SELECT
+        ticker,
+        representative_asset_name,
+        representative_issuer_name,
+        representative_asset_type,
+        transaction_count,
+        holder_count,
+        CASE
+          WHEN ticker = upper($1) THEN 'ticker'
+          WHEN ticker LIKE upper($1) || '%' THEN 'ticker_prefix'
+          WHEN lower(representative_asset_name) LIKE '%' || lower($1) || '%' THEN 'asset_name'
+          ELSE 'issuer_name'
+        END AS matched_field,
+        GREATEST(
+          CASE
+            WHEN ticker = upper($1) THEN 1.0
+            ELSE 0.0
+          END,
+          CASE
+            WHEN ticker LIKE upper($1) || '%' THEN 0.95
+            ELSE 0.0
+          END,
+          similarity(ticker, upper($1)),
+          similarity(lower(representative_asset_name), lower($1)),
+          similarity(lower(COALESCE(representative_issuer_name, '')), lower($1))
+        ) AS score
+      FROM ticker_summaries_vw
+      WHERE ticker = upper($1)
+         OR ticker % upper($1)
+         OR lower(representative_asset_name) % lower($1)
+         OR lower(COALESCE(representative_issuer_name, '')) % lower($1)
+         OR lower(representative_asset_name) LIKE '%' || lower($1) || '%'
+         OR lower(COALESCE(representative_issuer_name, '')) LIKE '%' || lower($1) || '%'
+      ORDER BY score DESC, transaction_count DESC, ticker
+      LIMIT $2
+    `,
+    [query, limit],
+  )
+
+  return result.rows.map(mapTickerSearchResult)
 }
 
 function mapOfficialSummary(row: OfficialSummaryRow): OfficialSummary {
@@ -592,6 +795,37 @@ function mapTickerHolder(row: TickerHolderRow): TickerHolder {
     asOfFilingDate: formatDate(row.as_of_filing_date),
     lastTransactionDate: formatDate(row.last_transaction_date),
     holderRank: toNumber(row.holder_rank) ?? 0,
+  }
+}
+
+function mapOfficialSearchResult(row: OfficialSearchRow): OfficialSearchResult {
+  return {
+    kind: 'official',
+    officialId: toIdentifier(row.official_id),
+    displayName: row.display_name,
+    chamber: row.chamber,
+    officialType: row.official_type,
+    stateCode: row.state_code,
+    districtCode: row.district_code,
+    party: row.party,
+    matchedAlias: row.matched_alias,
+    positionCount: toNumber(row.position_count) ?? 0,
+    transactionCount: toNumber(row.transaction_count) ?? 0,
+    score: toNumber(row.score) ?? 0,
+  }
+}
+
+function mapTickerSearchResult(row: TickerSearchRow): TickerSearchResult {
+  return {
+    kind: 'ticker',
+    ticker: row.ticker,
+    representativeAssetName: row.representative_asset_name,
+    representativeIssuerName: row.representative_issuer_name,
+    representativeAssetType: row.representative_asset_type,
+    transactionCount: toNumber(row.transaction_count) ?? 0,
+    holderCount: toNumber(row.holder_count) ?? 0,
+    matchedField: row.matched_field,
+    score: toNumber(row.score) ?? 0,
   }
 }
 

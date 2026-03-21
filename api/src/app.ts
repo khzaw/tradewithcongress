@@ -10,6 +10,7 @@ import {
   getTickerTrades,
   listOfficials,
   listTickers,
+  search,
 } from './readModels.ts'
 import type { Queryable } from './readModels.ts'
 import {
@@ -47,6 +48,20 @@ export function createApp({ db }: AppDependencies): Hono {
         additiveChanges: 'stay within the current major version',
       },
     })
+  })
+
+  v1.get('/search', async (c) => {
+    const query = parseSearchQuery(c.req.query('q'))
+    const limit = parseLimit(c.req.query('limit'))
+    if (query === null) {
+      return badRequest(c, 'q must be at least 2 non-space characters')
+    }
+    if (limit === null) {
+      return badRequest(c, 'limit must be an integer between 1 and 100')
+    }
+
+    const results = await search(db, query, limit)
+    return c.json({ data: results })
   })
 
   v1.get('/officials', async (c) => {
@@ -189,6 +204,19 @@ function parseLimit(rawValue: string | undefined): number | null {
   }
 
   return parsed
+}
+
+function parseSearchQuery(rawValue: string | undefined): string | null {
+  if (rawValue === undefined) {
+    return null
+  }
+
+  const query = rawValue.trim()
+  if (query.length < 2) {
+    return null
+  }
+
+  return query
 }
 
 function parsePositiveInteger(rawValue: string): number | null {

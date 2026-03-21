@@ -129,6 +129,35 @@ describe('versioned read api', () => {
     expect(officialResponse.status).toBe(404)
     expect(tickerResponse.status).toBe(404)
   })
+
+  test('returns grouped search results for fuzzy official and ticker queries', async () => {
+    const app = createApp({ db: client })
+
+    const officialResponse = await app.request(
+      `${API_BASE_PATH}/search?q=nancy%20polesi&limit=5`,
+    )
+    const officialBody = await officialResponse.json()
+    expect(officialResponse.status).toBe(200)
+    expect(officialBody.data.query).toBe('nancy polesi')
+    expect(officialBody.data.officials[0].displayName).toBe('Nancy Pelosi')
+    expect(officialBody.data.officials[0].matchedAlias).toBe('Nancy Pelosi')
+
+    const tickerResponse = await app.request(
+      `${API_BASE_PATH}/search?q=nvda&limit=5`,
+    )
+    const tickerBody = await tickerResponse.json()
+    expect(tickerResponse.status).toBe(200)
+    expect(tickerBody.data.tickers[0].ticker).toBe('NVDA')
+    expect(tickerBody.data.tickers[0].matchedField).toBe('ticker')
+  })
+
+  test('rejects underspecified search queries', async () => {
+    const app = createApp({ db: client })
+
+    const response = await app.request(`${API_BASE_PATH}/search?q=n`)
+
+    expect(response.status).toBe(400)
+  })
 })
 
 async function resetDatabase(db: PoolClient): Promise<void> {
@@ -193,7 +222,9 @@ async function seedDatabase(db: PoolClient): Promise<void> {
 
     INSERT INTO official_aliases (official_id, alias, alias_kind)
     VALUES
+      (1, 'Nancy Pelosi', 'display'),
       (1, 'Speaker Pelosi', 'search'),
+      (2, 'Ro Khanna', 'display'),
       (2, 'Representative Khanna', 'search');
 
     INSERT INTO assets (
