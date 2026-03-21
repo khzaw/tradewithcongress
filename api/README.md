@@ -22,7 +22,15 @@ Current read surface includes:
 - `GET /api/v1/officials/:officialId/trades`
 - `GET /api/v1/tickers`
 - `GET /api/v1/tickers/:ticker`
+- `GET /api/v1/tickers/:ticker/market`
 - `GET /api/v1/tickers/:ticker/trades`
 - `GET /api/v1/tickers/:ticker/holders`
 
-`/api/v1/overview` exists specifically to drive the dashboard-style landing page with tracked counts, recent disclosures, and activity series. Benchmark market data is still a future addition rather than part of the current contract.
+`/api/v1/overview` drives the landing page with tracked counts, recent disclosures, activity series, and an optional cached SPY benchmark lane.
+
+Market benchmarking notes:
+
+- set `ALPHA_VANTAGE_API_KEY` to enable real weekly adjusted series
+- benchmark data is cached on disk under `MARKET_DATA_CACHE_DIR`
+- `/api/v1/tickers/:ticker/market` returns the normalized ticker series plus the configured benchmark series
+- if no key is configured, benchmark responses degrade to `null` without breaking the rest of the API

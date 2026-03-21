@@ -84,15 +84,15 @@ Current dashboard surface:
 - tracked official / filing / trade / asset counts
 - recent disclosure feed for the landing page
 - monthly activity buckets for lightweight visualizations
-- intentionally explicit benchmark seam for future S&P 500 market-data overlays
+- optional SPY/S&P benchmark overlay via cached Alpha Vantage weekly adjusted data when `ALPHA_VANTAGE_API_KEY` is configured
 
 Current frontend browse surface:
 - redesigned dashboard landing page with a flatter, higher-density command-center layout, activity panels, portfolio leaders, ticker flow, and recent disclosure tables
 - landing-page search results and top cards link into official and ticker detail views
 - shareable query-state URLs use `?official={id}` and `?ticker={symbol}`
 - official detail views show latest disclosed holdings, recent trades, and visual portfolio/trade breakdowns
-- ticker detail views show latest holders, recent trade activity, and visual action/party breakdowns
-- benchmark panels are real UI surfaces, but live S&P 500 market data is not wired yet
+- ticker detail views show latest holders, recent trade activity, and a market-performance lane against SPY when the benchmark provider is configured
+- benchmark panels are real UI surfaces and now consume live cached market data when `ALPHA_VANTAGE_API_KEY` is present
 - the frontend styling system now runs on Tailwind CSS v4 rather than plain hand-authored global CSS
 
 Re-run just the House PTR parser:

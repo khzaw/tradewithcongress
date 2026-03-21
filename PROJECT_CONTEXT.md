@@ -52,6 +52,7 @@ Chosen stack:
 - Python tooling: `uv`
 - frontend tooling: `bun`
 - styling system: Tailwind CSS v4
+- market benchmark provider: Alpha Vantage weekly adjusted series with filesystem caching
 
 Intentional non-decisions:
 
@@ -108,6 +109,10 @@ Current relevant environment variables:
 - `DATABASE_URL`
 - `DOCUMENT_STORAGE_DIR`
 - `API_PORT`
+- `ALPHA_VANTAGE_API_KEY`
+- `MARKET_BENCHMARK_SYMBOL`
+- `MARKET_DATA_CACHE_DIR`
+- `MARKET_DATA_CACHE_TTL_HOURS`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -170,6 +175,7 @@ Current House ingestion behavior:
 - renders shareable frontend detail views for officials and tickers via URL query state
 - lets search results and top-list cards drill directly into official and ticker detail panels backed by `/api/v1`
 - exposes an overview snapshot endpoint for the homepage command-center surface
+- exposes a ticker market-comparison endpoint backed by cached Alpha Vantage weekly adjusted data
 - ships a redesigned dark editorial frontend with:
   - a dashboard-style landing page
   - dedicated official profile panels
@@ -178,7 +184,7 @@ Current House ingestion behavior:
   - a flatter, higher-density visual system with minimal panel chrome and tighter typography
   - Tailwind CSS v4 as the frontend styling layer, with the current app surface migrated off plain global styling into Tailwind-driven theme/component CSS
   - a quieter editorial typography system and masthead inspired by minimalist enterprise/product sites rather than loud dashboard chrome
-  - reserves explicit UI seams for S&P 500 benchmarking without pretending that market-price feeds are already wired
+  - a live S&P 500 proxy lane when `ALPHA_VANTAGE_API_KEY` is configured, with graceful fallback copy when local market data is disabled
 
 Validated local state as of 2026-03-21:
 
@@ -207,6 +213,7 @@ Validated local state as of 2026-03-21:
   - `GET /api/v1/officials/:officialId/trades`
   - `GET /api/v1/tickers`
   - `GET /api/v1/tickers/:ticker`
+  - `GET /api/v1/tickers/:ticker/market`
   - `GET /api/v1/tickers/:ticker/trades`
   - `GET /api/v1/tickers/:ticker/holders`
 - representative live-query outputs from the local 2026 data:
