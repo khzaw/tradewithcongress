@@ -89,6 +89,23 @@ describe('versioned read api', () => {
     expect(tradesBody.data[0].transactionType).toBe('sale')
   })
 
+  test('returns overview metrics, activity, and recent disclosures', async () => {
+    const app = createApp({ db: client })
+
+    const response = await app.request(`${API_BASE_PATH}/overview?limit=5`)
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.data.trackedOfficials).toBe(2)
+    expect(body.data.trackedFilings).toBe(3)
+    expect(body.data.trackedTrades).toBe(3)
+    expect(body.data.trackedAssets).toBe(3)
+    expect(body.data.activeHolders).toBe(3)
+    expect(body.data.recentTrades).toHaveLength(3)
+    expect(body.data.recentTrades[0].officialDisplayName).toBe('Ro Khanna')
+    expect(body.data.monthlyActivity.length).toBeGreaterThan(0)
+  })
+
   test('returns ticker list, detail, trades, and holders', async () => {
     const app = createApp({ db: client })
 

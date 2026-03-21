@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 
 import {
+  getOverviewSnapshot,
   getOfficialPortfolio,
   getOfficialSummary,
   getOfficialTrades,
@@ -48,6 +49,16 @@ export function createApp({ db }: AppDependencies): Hono {
         additiveChanges: 'stay within the current major version',
       },
     })
+  })
+
+  v1.get('/overview', async (c) => {
+    const limit = parseLimit(c.req.query('limit'))
+    if (limit === null) {
+      return badRequest(c, 'limit must be an integer between 1 and 100')
+    }
+
+    const overview = await getOverviewSnapshot(db, limit)
+    return c.json({ data: overview })
   })
 
   v1.get('/search', async (c) => {

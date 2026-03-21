@@ -184,6 +184,23 @@ export interface SearchResponse {
   tickers: TickerSearchResult[]
 }
 
+export interface OverviewActivityBucket {
+  monthStart: string
+  tradeCount: number
+  estimatedVolume: number
+}
+
+export interface OverviewSnapshot {
+  trackedOfficials: number
+  trackedFilings: number
+  trackedTrades: number
+  trackedAssets: number
+  activeHolders: number
+  latestTradeDate: string | null
+  monthlyActivity: OverviewActivityBucket[]
+  recentTrades: OfficialTradeActivity[]
+}
+
 interface OfficialSummaryRow {
   official_id: NumericLike
   display_name: string
@@ -353,6 +370,21 @@ interface TickerSearchRow {
   score: NumericLike
 }
 
+interface OverviewSnapshotRow {
+  tracked_officials: NumericLike
+  tracked_filings: NumericLike
+  tracked_trades: NumericLike
+  tracked_assets: NumericLike
+  active_holders: NumericLike
+  latest_trade_date: DateLike
+}
+
+interface OverviewActivityBucketRow {
+  month_start: DateLike
+  trade_count: NumericLike
+  estimated_volume: NumericLike
+}
+
 export async function listOfficials(
   db: Queryable,
   limit: number,
@@ -512,6 +544,100 @@ export async function search(
   }
 }
 
+export async function getOverviewSnapshot(
+  db: Queryable,
+  limit: number,
+): Promise<OverviewSnapshot> {
+  const summaryResult = await db.query<OverviewSnapshotRow>(
+    `
+      SELECT
+        (SELECT count(*) FROM officials) AS tracked_officials,
+        (SELECT count(*) FROM filings) AS tracked_filings,
+        (SELECT count(*) FROM transactions) AS tracked_trades,
+        (SELECT count(*) FROM assets) AS tracked_assets,
+        (
+          SELECT count(*)
+          FROM positions
+          WHERE position_status <> 'exited'
+        ) AS active_holders,
+        (
+          SELECT max(activity_date)
+          FROM official_trade_activity_vw
+        ) AS latest_trade_date
+    `,
+  )
+  const activityResult = await db.query<OverviewActivityBucketRow>(
+    `
+      WITH bounds AS (
+        SELECT
+          COALESCE(
+            date_trunc('month', max(activity_date)),
+            date_trunc('month', current_date)
+          )::DATE AS end_month
+        FROM official_trade_activity_vw
+      ),
+      months AS (
+        SELECT
+          generate_series(
+            (SELECT end_month FROM bounds) - INTERVAL '7 months',
+            (SELECT end_month FROM bounds),
+            INTERVAL '1 month'
+          )::DATE AS month_start
+      ),
+      trade_activity AS (
+        SELECT
+          date_trunc('month', activity_date)::DATE AS month_start,
+          count(*) AS trade_count,
+          sum(
+            (
+              COALESCE(amount_min, amount_max, 0)
+              + COALESCE(amount_max, amount_min, 0)
+            ) / 2.0
+          ) AS estimated_volume
+        FROM official_trade_activity_vw
+        GROUP BY 1
+      )
+      SELECT
+        months.month_start,
+        COALESCE(trade_activity.trade_count, 0) AS trade_count,
+        COALESCE(trade_activity.estimated_volume, 0) AS estimated_volume
+      FROM months
+      LEFT JOIN trade_activity
+        ON trade_activity.month_start = months.month_start
+      ORDER BY months.month_start
+    `,
+  )
+  const recentTrades = await listRecentTrades(db, limit)
+
+  return {
+    trackedOfficials: toNumber(summaryResult.rows[0]?.tracked_officials) ?? 0,
+    trackedFilings: toNumber(summaryResult.rows[0]?.tracked_filings) ?? 0,
+    trackedTrades: toNumber(summaryResult.rows[0]?.tracked_trades) ?? 0,
+    trackedAssets: toNumber(summaryResult.rows[0]?.tracked_assets) ?? 0,
+    activeHolders: toNumber(summaryResult.rows[0]?.active_holders) ?? 0,
+    latestTradeDate: formatDate(summaryResult.rows[0]?.latest_trade_date ?? null),
+    monthlyActivity: activityResult.rows.map(mapOverviewActivityBucket),
+    recentTrades,
+  }
+}
+
+export async function listRecentTrades(
+  db: Queryable,
+  limit: number,
+): Promise<OfficialTradeActivity[]> {
+  const result = await db.query<OfficialTradeActivityRow>(
+    `
+      SELECT *
+      FROM official_trade_activity_vw
+      ORDER BY activity_date DESC, transaction_id DESC
+      LIMIT $1
+    `,
+    [limit],
+  )
+
+  return result.rows.map(mapOfficialTradeActivity)
+}
+
 async function searchOfficials(
   db: Queryable,
   query: string,
@@ -660,6 +786,16 @@ function mapOfficialSummary(row: OfficialSummaryRow): OfficialSummary {
     latestTransactionDate: formatDate(row.latest_transaction_date),
     positionCount: toNumber(row.position_count) ?? 0,
     latestPositionFilingDate: formatDate(row.latest_position_filing_date),
+  }
+}
+
+function mapOverviewActivityBucket(
+  row: OverviewActivityBucketRow,
+): OverviewActivityBucket {
+  return {
+    monthStart: formatDate(row.month_start) ?? '',
+    tradeCount: toNumber(row.trade_count) ?? 0,
+    estimatedVolume: toNumber(row.estimated_volume) ?? 0,
   }
 }
 
