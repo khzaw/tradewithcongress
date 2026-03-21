@@ -285,6 +285,7 @@ Important issues:
 - `KHZ-60` Implement official identity resolution and fuzzy people search
 - `KHZ-61` Implement security normalization and ticker-side search index
 - `KHZ-170` Build the overview dashboard and benchmark surfaces
+- `KHZ-171` Adopt Tailwind CSS v4 for the frontend styling system
 - `KHZ-168` Build the lightweight read API for official and ticker views
 - `KHZ-169` Define API versioning strategy for the read API
 
@@ -298,6 +299,7 @@ Current status snapshot:
 - `KHZ-60`: in progress
 - `KHZ-61`: in progress
 - `KHZ-170`: in progress
+- `KHZ-171`: done
 - `KHZ-168`: done
 - `KHZ-169`: done
 
@@ -327,6 +329,7 @@ Recent commits already on `master`:
 - `903439a` api: add overview snapshot endpoint
 - `c6986d9` web: redesign dashboard and profile surfaces
 - `3bbc611` web: adopt Tailwind CSS v4
+- `0928077` docs: record Tailwind frontend stack
 
 ## Next recommended steps
 
