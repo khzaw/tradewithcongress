@@ -290,16 +290,17 @@ Recent commits already on `master`:
 - `3cdebf5` docs: refresh parser handoff status
 - `d8cc205` api: add versioned read service
 - `d6f5b69` docs: record api versioning contract
+- `b9746ab` api: add universal search endpoint
+- `124c6f7` web: add search results experience
 
 ## Next recommended steps
 
 Immediate next work:
 
-1. Add search endpoints and lookup-by-name/ticker flows on top of `/api/v1`.
-2. Add dedicated official and ticker detail page flows in the frontend on top of the existing `/api/v1` endpoints.
-3. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
-4. Improve OCR/table extraction if future scanned House holdings disclosures appear.
-5. Add Senate ingestion after House parsing is stable.
+1. Add dedicated official and ticker detail page flows in the frontend on top of the existing `/api/v1` endpoints.
+2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
+3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
+4. Add Senate ingestion after House parsing is stable.
 
 After that:
 
