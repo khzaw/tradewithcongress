@@ -1,4 +1,5 @@
 import type {
+  MarketSeries,
   OfficialTradeActivity,
   OverviewSnapshot,
   PortfolioPosition,
@@ -24,10 +25,37 @@ export function totalEstimatedTradeVolume(trades: TradeLike[]): number {
 export function buildOverviewSeries(
   overview: OverviewSnapshot,
 ): SeriesPoint[] {
-  return overview.monthlyActivity.map((bucket) => ({
+  const values = overview.monthlyActivity.map((bucket) => ({
     label: formatMonthLabel(bucket.monthStart),
     value: bucket.estimatedVolume > 0 ? bucket.estimatedVolume : bucket.tradeCount,
   }))
+
+  return normalizeSeries(values)
+}
+
+export function buildOverviewBenchmarkSeries(
+  overview: OverviewSnapshot,
+): SeriesPoint[] | null {
+  if (overview.benchmark === null) {
+    return null
+  }
+
+  const monthValues = new Map<string, number>()
+  for (const point of overview.benchmark.points) {
+    monthValues.set(point.date.slice(0, 7), point.normalizedClose)
+  }
+
+  let lastKnownValue = monthValues.get(overview.monthlyActivity[0]?.monthStart.slice(0, 7) ?? '') ?? 100
+
+  return overview.monthlyActivity.map((bucket) => {
+    const monthKey = bucket.monthStart.slice(0, 7)
+    lastKnownValue = monthValues.get(monthKey) ?? lastKnownValue
+
+    return {
+      label: formatMonthLabel(bucket.monthStart),
+      value: lastKnownValue,
+    }
+  })
 }
 
 export function buildMonthlyTradeSeries(
@@ -121,6 +149,20 @@ export function averageFilingDelayDays(trades: TradeLike[]): number | null {
   return Math.round(delays.reduce((total, value) => total + value, 0) / delays.length)
 }
 
+export function buildMarketSeries(
+  series: MarketSeries | null,
+  pointLimit = 12,
+): SeriesPoint[] | null {
+  if (series === null) {
+    return null
+  }
+
+  return series.points.slice(-pointLimit).map((point) => ({
+    label: formatMonthLabel(point.date, true),
+    value: point.normalizedClose,
+  }))
+}
+
 export function relativeOverviewReturn(overview: OverviewSnapshot): number {
   const series = buildOverviewSeries(overview)
   if (series.length < 2) {
@@ -134,6 +176,31 @@ export function relativeOverviewReturn(overview: OverviewSnapshot): number {
   }
 
   return ((lastValue - firstValue) / firstValue) * 100
+}
+
+export function relativeMarketReturn(series: MarketSeries | null): number | null {
+  if (series === null || series.points.length < 2) {
+    return null
+  }
+
+  const firstValue = series.points[0]?.normalizedClose ?? 100
+  const lastValue = series.points[series.points.length - 1]?.normalizedClose ?? 100
+
+  return firstValue === 0 ? null : ((lastValue - firstValue) / firstValue) * 100
+}
+
+export function relativeMarketSpread(
+  security: MarketSeries | null,
+  benchmark: MarketSeries | null,
+): number | null {
+  const securityReturn = relativeMarketReturn(security)
+  const benchmarkReturn = relativeMarketReturn(benchmark)
+
+  if (securityReturn === null || benchmarkReturn === null) {
+    return null
+  }
+
+  return securityReturn - benchmarkReturn
 }
 
 export function latestActivityLabel(
@@ -166,6 +233,19 @@ function midpoint(
   const floor = amountMin ?? amountMax ?? 0
   const ceiling = amountMax ?? amountMin ?? 0
   return (floor + ceiling) / 2
+}
+
+function normalizeSeries(points: SeriesPoint[]): SeriesPoint[] {
+  const baseline = points.find((point) => point.value > 0)?.value ?? 0
+
+  if (baseline === 0) {
+    return points
+  }
+
+  return points.map((point) => ({
+    label: point.label,
+    value: (point.value / baseline) * 100,
+  }))
 }
 
 function formatMonthLabel(value: string, includeDay = false): string {

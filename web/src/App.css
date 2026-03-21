@@ -656,6 +656,10 @@
   color: var(--accent-violet);
 }
 
+.tone-muted {
+  color: rgba(236, 231, 222, 0.58);
+}
+
 .chart-line-lime {
   stroke: var(--accent-lime);
 }
@@ -666,6 +670,10 @@
 
 .chart-line-violet {
   stroke: var(--accent-violet);
+}
+
+.chart-line-muted {
+  stroke: rgba(236, 231, 222, 0.48);
 }
 
 .chart-dot-lime {

@@ -1,12 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { OverviewSnapshot, PortfolioPosition, TickerTradeActivity } from './api.ts'
+import type { MarketSeries, OverviewSnapshot, PortfolioPosition, TickerTradeActivity } from './api.ts'
 import {
   averageFilingDelayDays,
   buildAssetTypeBreakdown,
+  buildMarketSeries,
   buildMonthlyTradeSeries,
+  buildOverviewBenchmarkSeries,
   buildPortfolioExposure,
   buildTradeTypeBreakdown,
+  relativeMarketReturn,
+  relativeMarketSpread,
   relativeOverviewReturn,
 } from './insights.ts'
 
@@ -152,6 +156,7 @@ describe('insights helpers', () => {
       activeHolders: 5,
       latestTradeDate: '2026-03-10',
       recentTrades: [],
+      benchmark: null,
       monthlyActivity: [
         { monthStart: '2026-01-01', tradeCount: 10, estimatedVolume: 1000 },
         { monthStart: '2026-02-01', tradeCount: 12, estimatedVolume: 1500 },
@@ -160,5 +165,56 @@ describe('insights helpers', () => {
     }
 
     expect(relativeOverviewReturn(overview)).toBe(80)
+  })
+
+  test('builds market and benchmark series from normalized close data', () => {
+    const benchmark: MarketSeries = {
+      symbol: 'SPY',
+      label: 'S&P 500 proxy (SPY)',
+      source: 'test',
+      asOfDate: '2026-03-20',
+      points: [
+        { date: '2026-01-02', close: 100, normalizedClose: 100 },
+        { date: '2026-02-06', close: 104, normalizedClose: 104 },
+        { date: '2026-03-06', close: 112, normalizedClose: 112 },
+      ],
+    }
+
+    const overview: OverviewSnapshot = {
+      trackedOfficials: 10,
+      trackedFilings: 20,
+      trackedTrades: 30,
+      trackedAssets: 40,
+      activeHolders: 5,
+      latestTradeDate: '2026-03-10',
+      recentTrades: [],
+      benchmark,
+      monthlyActivity: [
+        { monthStart: '2026-01-01', tradeCount: 10, estimatedVolume: 1000 },
+        { monthStart: '2026-02-01', tradeCount: 12, estimatedVolume: 1500 },
+        { monthStart: '2026-03-01', tradeCount: 18, estimatedVolume: 1800 },
+      ],
+    }
+
+    expect(buildOverviewBenchmarkSeries(overview)).toEqual([
+      { label: 'Jan', value: 100 },
+      { label: 'Feb', value: 104 },
+      { label: 'Mar', value: 112 },
+    ])
+    expect(buildMarketSeries(benchmark, 3)).toEqual([
+      { label: 'Jan 2', value: 100 },
+      { label: 'Feb 6', value: 104 },
+      { label: 'Mar 6', value: 112 },
+    ])
+    expect(relativeMarketReturn(benchmark)).toBe(12)
+    expect(relativeMarketSpread(benchmark, {
+      ...benchmark,
+      symbol: 'QQQ',
+      points: [
+        { date: '2026-01-02', close: 100, normalizedClose: 100 },
+        { date: '2026-02-06', close: 103, normalizedClose: 103 },
+        { date: '2026-03-06', close: 107, normalizedClose: 107 },
+      ],
+    })).toBeCloseTo(5)
   })
 })

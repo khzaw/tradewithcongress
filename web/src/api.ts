@@ -148,6 +148,25 @@ export interface OverviewActivityBucket {
   estimatedVolume: number
 }
 
+export interface MarketSeriesPoint {
+  date: string
+  close: number
+  normalizedClose: number
+}
+
+export interface MarketSeries {
+  symbol: string
+  label: string
+  source: string
+  asOfDate: string | null
+  points: MarketSeriesPoint[]
+}
+
+export interface TickerMarketSnapshot {
+  security: MarketSeries | null
+  benchmark: MarketSeries | null
+}
+
 export interface OverviewSnapshot {
   trackedOfficials: number
   trackedFilings: number
@@ -157,6 +176,7 @@ export interface OverviewSnapshot {
   latestTradeDate: string | null
   monthlyActivity: OverviewActivityBucket[]
   recentTrades: OfficialTradeActivity[]
+  benchmark: MarketSeries | null
 }
 
 export interface OfficialSearchResult {
@@ -210,6 +230,7 @@ export interface TickerDetail {
   summary: TickerSummary
   holders: TickerHolder[]
   trades: TickerTradeActivity[]
+  market: TickerMarketSnapshot
 }
 
 interface ResponseEnvelope<TData> {
@@ -280,7 +301,7 @@ export async function fetchTickerDetail(
   options: RequestOptions = {},
 ): Promise<TickerDetail> {
   const normalizedTicker = ticker.trim().toUpperCase()
-  const [summary, holders, trades] = await Promise.all([
+  const [summary, holders, trades, market] = await Promise.all([
     getJson<ResponseEnvelope<TickerSummary>>(`/api/v1/tickers/${normalizedTicker}`, options),
     getJson<ResponseEnvelope<TickerHolder[]>>(
       `/api/v1/tickers/${normalizedTicker}/holders?limit=20`,
@@ -290,12 +311,17 @@ export async function fetchTickerDetail(
       `/api/v1/tickers/${normalizedTicker}/trades?limit=20`,
       options,
     ),
+    getJson<ResponseEnvelope<TickerMarketSnapshot>>(
+      `/api/v1/tickers/${normalizedTicker}/market`,
+      options,
+    ),
   ])
 
   return {
     summary: summary.data,
     holders: holders.data,
     trades: trades.data,
+    market: market.data,
   }
 }
 

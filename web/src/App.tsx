@@ -18,12 +18,16 @@ import { RingChart, TrendChart } from './charts.tsx'
 import {
   averageFilingDelayDays,
   buildAssetTypeBreakdown,
+  buildMarketSeries,
   buildMonthlyTradeSeries,
+  buildOverviewBenchmarkSeries,
   buildOverviewSeries,
   buildPartyBreakdown,
   buildPortfolioExposure,
   buildTradeTypeBreakdown,
   latestActivityLabel,
+  relativeMarketReturn,
+  relativeMarketSpread,
   relativeOverviewReturn,
   totalEstimatedTradeVolume,
 } from './insights.ts'
@@ -40,6 +44,7 @@ const EMPTY_STATE: DashboardState = {
     latestTradeDate: null,
     monthlyActivity: [],
     recentTrades: [],
+    benchmark: null,
   },
   topOfficials: [],
   topTickers: [],
@@ -405,7 +410,12 @@ function OverviewView({
   onTickerSelect,
 }: OverviewViewProps) {
   const overviewSeries = buildOverviewSeries(dashboardState.overview)
+  const overviewBenchmarkSeries = buildOverviewBenchmarkSeries(dashboardState.overview)
+  const hasOverviewBenchmark = dashboardState.overview.benchmark !== null
   const momentum = relativeOverviewReturn(dashboardState.overview)
+  const benchmarkReturn = relativeMarketReturn(dashboardState.overview.benchmark)
+  const benchmarkSpread =
+    benchmarkReturn === null ? momentum : momentum - benchmarkReturn
 
   return (
     <section className="overview-layout">
@@ -467,9 +477,13 @@ function OverviewView({
           />
           <MetricCard
             label="Flow delta"
-            value={formatSignedPercent(momentum)}
+            value={formatSignedPercent(benchmarkSpread)}
             tone="neutral"
-            detail="Disclosure-weighted activity index"
+            detail={
+              benchmarkReturn === null
+                ? 'Disclosure-weighted activity index'
+                : `Activity index vs ${dashboardState.overview.benchmark?.symbol ?? 'SPY'}`
+            }
           />
         </section>
 
@@ -478,18 +492,24 @@ function OverviewView({
             <div className="surface-heading">
               <div>
                 <span className="section-kicker">Performance surface</span>
-                <h2>Congressional activity vs S&amp;P benchmark</h2>
+                <h2>Disclosure activity index vs S&amp;P 500 proxy</h2>
               </div>
-              <span className="note-pill">S&amp;P feed next</span>
+              <span className="note-pill">
+                {dashboardState.overview.benchmark?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
+              </span>
             </div>
             <p className="muted-copy">
-              Disclosure activity is live now. The comparison lane is intentionally reserved for SPY/S&amp;P price history once the market feed lands.
+              {hasOverviewBenchmark
+                ? 'Trade flow is rebased to the first visible month so it can be compared against cached SPY weekly adjusted closes without pretending the two series are the same instrument.'
+                : 'The comparison lane is wired to cached SPY weekly adjusted closes and will activate once a market-data key is configured.'}
             </p>
             <TrendChart
               points={overviewSeries}
-              label="Congress activity"
+              label="Disclosure activity index"
               tone="coral"
-              pendingBenchmarkLabel="S&P 500 feed pending"
+              comparisonPoints={hasOverviewBenchmark ? overviewBenchmarkSeries : null}
+              comparisonLabel={hasOverviewBenchmark ? dashboardState.overview.benchmark?.label : undefined}
+              comparisonTone="muted"
             />
           </article>
 
@@ -620,7 +640,6 @@ function DetailSurface({
       detail={detailState.data as TickerDetail}
       onBack={onBack}
       onOfficialSelect={onOfficialSelect}
-      onTickerSelect={onTickerSelect}
     />
   )
 }
@@ -837,23 +856,31 @@ interface TickerDetailViewProps {
   detail: TickerDetail
   onBack: () => void
   onOfficialSelect: (officialId: string) => void
-  onTickerSelect: (ticker: string) => void
 }
 
 function TickerDetailView({
   detail,
   onBack,
   onOfficialSelect,
-  onTickerSelect,
 }: TickerDetailViewProps) {
   const tradeSeries = buildMonthlyTradeSeries(detail.trades)
+  const securitySeries = buildMarketSeries(detail.market.security, 14)
+  const benchmarkSeries = buildMarketSeries(detail.market.benchmark, 14)
   const partyBreakdown = buildPartyBreakdown(detail.trades)
   const tradeTypes = buildTradeTypeBreakdown(detail.trades)
   const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
   const averageLag = averageFilingDelayDays(detail.trades)
+  const securityReturn = relativeMarketReturn(detail.market.security)
+  const benchmarkSpread = relativeMarketSpread(
+    detail.market.security,
+    detail.market.benchmark,
+  )
+  const hasTickerBenchmark =
+    detail.market.security !== null && detail.market.benchmark !== null
+  const latestClose = detail.market.security?.points[detail.market.security.points.length - 1]?.close ?? null
 
   return (
-    <section className="detail-layout">
+    <section className="detail-layout detail-layout-ticker">
       <aside className="profile-column">
         <article className="profile-card">
           <button className="text-button" type="button" onClick={onBack}>
@@ -870,14 +897,29 @@ function TickerDetailView({
             <MetricStat label="Trades" value={formatInteger(detail.summary.transactionCount)} />
             <MetricStat label="Officials" value={formatInteger(detail.summary.tradingOfficialCount)} />
             <MetricStat label="Holders" value={formatInteger(detail.summary.holderCount)} />
-            <MetricStat label="Est. volume" value={formatCompactCurrency(estimatedVolume)} />
+            <MetricStat
+              label="Ticker return"
+              value={formatSignedPercentOrPlaceholder(securityReturn)}
+            />
           </div>
         </article>
 
-        <SurfaceCard kicker="Benchmarking" title="S&P 500 overlay">
+        <SurfaceCard kicker="Market overlay" title="Benchmark lane">
           <p className="muted-copy">
-            This ticker surface is designed to compare issuer trade flow against the broader market. The SPY/S&amp;P price-history layer is still pending.
+            {hasTickerBenchmark
+              ? `Weekly adjusted price history is cached from ${detail.market.benchmark?.source ?? 'the market provider'} so this ticker can be read against a live SPY benchmark instead of a placeholder.`
+              : 'The benchmark lane is fully wired, but local market data is inactive until ALPHA_VANTAGE_API_KEY is configured.'}
           </p>
+          <div className="profile-rail-meta">
+            <div>
+              <span>Last close</span>
+              <strong>{formatPrice(latestClose)}</strong>
+            </div>
+            <div>
+              <span>Vs SPY</span>
+              <strong>{formatSignedPercentOrPlaceholder(benchmarkSpread)}</strong>
+            </div>
+          </div>
         </SurfaceCard>
 
         <SurfaceCard kicker="Party split" title="Who is trading it">
@@ -888,22 +930,24 @@ function TickerDetailView({
       <div className="detail-stage">
         <section className="metric-grid">
           <MetricCard
-            label="First trade"
-            value={formatDate(detail.summary.firstTransactionDate) ?? 'n/a'}
+            label="Last close"
+            value={formatPrice(latestClose)}
             tone="neutral"
-            detail="Earliest parsed trade"
+            detail={detail.market.security?.asOfDate === null || detail.market.security === null
+              ? 'Market series unavailable'
+              : `As of ${formatDate(detail.market.security.asOfDate) ?? 'n/a'}`}
           />
           <MetricCard
-            label="Latest trade"
-            value={formatDate(detail.summary.latestTransactionDate) ?? 'n/a'}
+            label="Ticker return"
+            value={formatSignedPercentOrPlaceholder(securityReturn)}
             tone="coral"
-            detail="Latest parsed trade"
+            detail={`${detail.summary.ticker} normalized performance`}
           />
           <MetricCard
-            label="Latest holder filing"
-            value={formatDate(detail.summary.latestPositionFilingDate) ?? 'n/a'}
+            label="Vs SPY"
+            value={formatSignedPercentOrPlaceholder(benchmarkSpread)}
             tone="violet"
-            detail="Most recent holdings snapshot"
+            detail="Relative performance spread"
           />
           <MetricCard
             label="Avg. filing lag"
@@ -917,23 +961,49 @@ function TickerDetailView({
           <article className="surface-card showcase-primary">
             <div className="surface-heading">
               <div>
-                <span className="section-kicker">Ticker flow</span>
-                <h2>Disclosed trading interest over time</h2>
+                <span className="section-kicker">Market performance</span>
+                <h2>{detail.summary.ticker} vs S&amp;P 500 proxy</h2>
               </div>
-              <button className="text-button" type="button" onClick={() => onTickerSelect(detail.summary.ticker)}>
-                Refresh
-              </button>
+              <span className="note-pill">
+                {detail.market.security?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
+              </span>
             </div>
-            <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="coral" />
+            <p className="muted-copy">
+              {hasTickerBenchmark
+                ? 'The price lane is real market data. The trade ledger below remains disclosure-derived, so you can compare what the security did against when officials reported touching it.'
+                : 'Once market data is configured, this lane will compare normalized issuer performance against SPY while keeping the disclosure ledger below unchanged.'}
+            </p>
+            <TrendChart
+              points={securitySeries ?? tradeSeries}
+              label={securitySeries === null ? 'Estimated disclosed volume' : detail.summary.ticker}
+              tone="coral"
+              comparisonPoints={hasTickerBenchmark ? benchmarkSeries : null}
+              comparisonLabel={hasTickerBenchmark ? detail.market.benchmark?.label : undefined}
+              comparisonTone="muted"
+            />
           </article>
 
-          <article className="surface-card">
-            <div className="surface-heading compact">
-              <span className="section-kicker">Action mix</span>
-              <h3>{detail.trades.length} rows</h3>
-            </div>
-            <RingChart segments={tradeTypes} centerLabel="actions" />
-          </article>
+          <div className="showcase-side">
+            <article className="surface-card">
+              <div className="surface-heading compact">
+                <span className="section-kicker">Action mix</span>
+                <h3>{detail.trades.length} rows</h3>
+              </div>
+              <RingChart segments={tradeTypes} centerLabel="actions" />
+            </article>
+
+            <article className="surface-card">
+              <div className="surface-heading compact">
+                <span className="section-kicker">Disclosure flow</span>
+                <h3>{formatCompactCurrency(estimatedVolume)}</h3>
+              </div>
+              <p className="muted-copy">
+                Parsed trade rows span {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
+                {formatDate(detail.summary.latestTransactionDate) ?? 'n/a'} across{' '}
+                {formatInteger(detail.summary.tradingOfficialCount)} officials.
+              </p>
+            </article>
+          </div>
         </section>
 
         <article className="surface-card">
@@ -1333,12 +1403,28 @@ function formatCompactCurrency(value: number): string {
   }).format(value)
 }
 
+function formatPrice(value: number | null): string {
+  if (value === null) {
+    return 'n/a'
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: value >= 100 ? 2 : 3,
+  }).format(value)
+}
+
 function formatInteger(value: number): string {
   return new Intl.NumberFormat().format(value)
 }
 
 function formatSignedPercent(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`
+}
+
+function formatSignedPercentOrPlaceholder(value: number | null): string {
+  return value === null ? 'n/a' : formatSignedPercent(value)
 }
 
 function formatDate(value: string | null): string | null {

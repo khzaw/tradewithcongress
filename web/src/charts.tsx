@@ -4,7 +4,9 @@ interface TrendChartProps {
   points: SeriesPoint[]
   label: string
   tone?: 'lime' | 'coral' | 'violet'
-  pendingBenchmarkLabel?: string
+  comparisonPoints?: SeriesPoint[] | null
+  comparisonLabel?: string
+  comparisonTone?: 'lime' | 'coral' | 'violet' | 'muted'
 }
 
 interface RingChartProps {
@@ -19,24 +21,28 @@ export function TrendChart({
   points,
   label,
   tone = 'lime',
-  pendingBenchmarkLabel,
+  comparisonPoints = null,
+  comparisonLabel,
+  comparisonTone = 'muted',
 }: TrendChartProps) {
   const series = points.length > 0 ? points : [{ label: 'N/A', value: 0 }]
-  const maxValue = Math.max(...series.map((point) => point.value), 1)
-  const polyline = series
-    .map((point, index) => {
-      const x = (index / Math.max(series.length - 1, 1)) * CHART_WIDTH
-      const y = CHART_HEIGHT - (point.value / maxValue) * (CHART_HEIGHT - 32) - 16
-      return `${x},${y}`
-    })
-    .join(' ')
+  const secondarySeries = comparisonPoints !== null && comparisonPoints.length > 0
+    ? comparisonPoints
+    : null
+  const maxValue = Math.max(
+    ...series.map((point) => point.value),
+    ...(secondarySeries?.map((point) => point.value) ?? []),
+    1,
+  )
+  const polyline = buildPolyline(series, maxValue)
+  const comparisonPolyline = secondarySeries === null ? null : buildPolyline(secondarySeries, maxValue)
 
   return (
     <div className="trend-chart">
       <div className="chart-legend">
         <span className={`legend-swatch tone-${tone}`}>{label}</span>
-        {pendingBenchmarkLabel !== undefined ? (
-          <span className="legend-swatch pending">{pendingBenchmarkLabel}</span>
+        {comparisonLabel !== undefined ? (
+          <span className={`legend-swatch tone-${comparisonTone}`}>{comparisonLabel}</span>
         ) : null}
       </div>
       <svg
@@ -58,13 +64,11 @@ export function TrendChart({
             />
           )
         })}
-        {pendingBenchmarkLabel !== undefined ? (
-          <line
-            x1="0"
-            x2={String(CHART_WIDTH)}
-            y1={String(CHART_HEIGHT / 2)}
-            y2={String(CHART_HEIGHT / 2)}
-            className="chart-pending-line"
+        {comparisonPolyline !== null ? (
+          <polyline
+            points={comparisonPolyline}
+            fill="none"
+            className={`chart-line chart-line-${comparisonTone}`}
           />
         ) : null}
         <polyline
@@ -166,4 +170,17 @@ function formatRingValue(value: number): string {
   return new Intl.NumberFormat(undefined, {
     maximumFractionDigits: value % 1 === 0 ? 0 : 1,
   }).format(value)
+}
+
+function buildPolyline(
+  points: SeriesPoint[],
+  maxValue: number,
+): string {
+  return points
+    .map((point, index) => {
+      const x = (index / Math.max(points.length - 1, 1)) * CHART_WIDTH
+      const y = CHART_HEIGHT - (point.value / maxValue) * (CHART_HEIGHT - 32) - 16
+      return `${x},${y}`
+    })
+    .join(' ')
 }
