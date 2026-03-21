@@ -11,6 +11,7 @@ import { Pool, type PoolClient } from 'pg'
 
 import { createApp } from './app.ts'
 import { loadConfig } from './config.ts'
+import type { MarketDataClient, MarketSeries } from './marketData.ts'
 import { API_BASE_PATH, API_VERSION, API_VERSION_HEADER } from './version.ts'
 
 const config = loadConfig({
@@ -90,7 +91,7 @@ describe('versioned read api', () => {
   })
 
   test('returns overview metrics, activity, and recent disclosures', async () => {
-    const app = createApp({ db: client })
+    const app = createApp({ db: client, marketData: createStubMarketDataClient() })
 
     const response = await app.request(`${API_BASE_PATH}/overview?limit=5`)
     const body = await response.json()
@@ -104,6 +105,8 @@ describe('versioned read api', () => {
     expect(body.data.recentTrades).toHaveLength(3)
     expect(body.data.recentTrades[0].officialDisplayName).toBe('Ro Khanna')
     expect(body.data.monthlyActivity.length).toBeGreaterThan(0)
+    expect(body.data.benchmark.symbol).toBe('SPY')
+    expect(body.data.benchmark.points).toHaveLength(3)
   })
 
   test('returns ticker list, detail, trades, and holders', async () => {
@@ -135,6 +138,18 @@ describe('versioned read api', () => {
     expect(holdersResponse.status).toBe(200)
     expect(holdersBody.data).toHaveLength(2)
     expect(holdersBody.data[0].officialDisplayName).toBe('Nancy Pelosi')
+  })
+
+  test('returns ticker market comparison when the provider is available', async () => {
+    const app = createApp({ db: client, marketData: createStubMarketDataClient() })
+
+    const response = await app.request(`${API_BASE_PATH}/tickers/NVDA/market`)
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.data.security.symbol).toBe('NVDA')
+    expect(body.data.benchmark.symbol).toBe('SPY')
+    expect(body.data.security.points[0].normalizedClose).toBe(100)
   })
 
   test('returns 404 for missing official or ticker resources', async () => {
@@ -454,4 +469,55 @@ async function seedDatabase(db: PoolClient): Promise<void> {
         '2026-02-01'
       );
   `)
+}
+
+function createStubMarketDataClient(): MarketDataClient {
+  const benchmark = createSeries('SPY', [
+    ['2026-01-02', 100],
+    ['2026-01-09', 104],
+    ['2026-01-16', 109],
+  ])
+
+  const bySymbol = new Map<string, MarketSeries>([
+    ['SPY', benchmark],
+    [
+      'NVDA',
+      createSeries('NVDA', [
+        ['2026-01-02', 100],
+        ['2026-01-09', 112],
+        ['2026-01-16', 120],
+      ]),
+    ],
+  ])
+
+  return {
+    async getBenchmarkSeries() {
+      return benchmark
+    },
+    async getTickerMarketSnapshot(ticker: string) {
+      return {
+        security: bySymbol.get(ticker.toUpperCase()) ?? null,
+        benchmark,
+      }
+    },
+  }
+}
+
+function createSeries(
+  symbol: string,
+  values: Array<[date: string, close: number]>,
+): MarketSeries {
+  const baseline = values[0]?.[1] ?? 1
+
+  return {
+    symbol,
+    label: symbol,
+    source: 'test',
+    asOfDate: values[values.length - 1]?.[0] ?? null,
+    points: values.map(([date, close]) => ({
+      date,
+      close,
+      normalizedClose: (close / baseline) * 100,
+    })),
+  }
 }

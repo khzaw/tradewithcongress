@@ -14,6 +14,7 @@ import {
   search,
 } from './readModels.ts'
 import type { Queryable } from './readModels.ts'
+import type { MarketDataClient } from './marketData.ts'
 import {
   API_BASE_PATH,
   API_VERSION,
@@ -22,9 +23,10 @@ import {
 
 interface AppDependencies {
   db: Queryable
+  marketData?: MarketDataClient
 }
 
-export function createApp({ db }: AppDependencies): Hono {
+export function createApp({ db, marketData }: AppDependencies): Hono {
   const app = new Hono()
   const v1 = new Hono()
 
@@ -57,8 +59,17 @@ export function createApp({ db }: AppDependencies): Hono {
       return badRequest(c, 'limit must be an integer between 1 and 100')
     }
 
-    const overview = await getOverviewSnapshot(db, limit)
-    return c.json({ data: overview })
+    const [overview, benchmark] = await Promise.all([
+      getOverviewSnapshot(db, limit),
+      marketData?.getBenchmarkSeries() ?? Promise.resolve(null),
+    ])
+
+    return c.json({
+      data: {
+        ...overview,
+        benchmark,
+      },
+    })
   })
 
   v1.get('/search', async (c) => {
@@ -197,6 +208,26 @@ export function createApp({ db }: AppDependencies): Hono {
 
     const holders = await getTickerHolders(db, ticker, limit)
     return c.json({ data: holders })
+  })
+
+  v1.get('/tickers/:ticker/market', async (c) => {
+    const ticker = normalizeTicker(c.req.param('ticker'))
+    if (ticker === null) {
+      return badRequest(c, 'ticker must be a non-empty symbol')
+    }
+
+    const summary = await getTickerSummary(db, ticker)
+    if (summary === null) {
+      return notFound(c, 'ticker not found')
+    }
+
+    const marketSnapshot = await (marketData?.getTickerMarketSnapshot(ticker) ??
+      Promise.resolve({
+        security: null,
+        benchmark: null,
+      }))
+
+    return c.json({ data: marketSnapshot })
   })
 
   app.route(API_BASE_PATH, v1)

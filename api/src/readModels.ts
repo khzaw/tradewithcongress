@@ -1,4 +1,5 @@
 import type { Pool, PoolClient } from 'pg'
+import type { MarketSeries } from './marketData.ts'
 
 type DateLike = Date | string | null
 type NumericLike = number | string | null
@@ -199,6 +200,7 @@ export interface OverviewSnapshot {
   latestTradeDate: string | null
   monthlyActivity: OverviewActivityBucket[]
   recentTrades: OfficialTradeActivity[]
+  benchmark: MarketSeries | null
 }
 
 interface OfficialSummaryRow {
@@ -618,6 +620,7 @@ export async function getOverviewSnapshot(
     latestTradeDate: formatDate(summaryResult.rows[0]?.latest_trade_date ?? null),
     monthlyActivity: activityResult.rows.map(mapOverviewActivityBucket),
     recentTrades,
+    benchmark: null,
   }
 }
 
