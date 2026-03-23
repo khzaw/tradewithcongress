@@ -9,6 +9,7 @@ interface TrendChartProps {
   comparisonPoints?: SeriesPoint[] | null
   comparisonLabel?: string
   comparisonTone?: 'lime' | 'coral' | 'violet' | 'muted'
+  sourceNote?: string
 }
 
 interface RingChartProps {
@@ -26,6 +27,7 @@ export function TrendChart({
   comparisonPoints = null,
   comparisonLabel,
   comparisonTone = 'muted',
+  sourceNote,
 }: TrendChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const series = points.length > 0 ? points : [{ label: 'N/A', value: 0 }]
@@ -161,6 +163,9 @@ export function TrendChart({
             ) : null}
           </div>
         </div>
+      ) : null}
+      {sourceNote !== undefined ? (
+        <div className="chart-source-note">{sourceNote}</div>
       ) : null}
     </div>
   )

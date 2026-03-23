@@ -542,9 +542,6 @@ function OverviewView({
               <span className="section-kicker">Benchmark surface</span>
               <h2>Disclosure activity vs S&amp;P 500</h2>
             </div>
-            <span className="note-pill">
-              {dashboardState.overview.benchmark?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
-            </span>
           </div>
           <p className="muted-copy">
             {hasOverviewBenchmark
@@ -558,6 +555,11 @@ function OverviewView({
             comparisonPoints={hasOverviewBenchmark ? overviewBenchmarkSeries : null}
             comparisonLabel={hasOverviewBenchmark ? dashboardState.overview.benchmark?.label : undefined}
             comparisonTone="muted"
+            sourceNote={
+              dashboardState.overview.benchmark?.source === undefined
+                ? undefined
+                : `Market data loaded from ${dashboardState.overview.benchmark.source}`
+            }
           />
         </article>
 
@@ -862,9 +864,6 @@ function TickerDetailView({
               <span className="section-kicker">Market performance</span>
               <h2>{detail.summary.ticker} vs S&amp;P 500</h2>
             </div>
-            <span className="note-pill">
-              {detail.market.security?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
-            </span>
           </div>
           <div className="profile-rail-meta">
             <div>
@@ -891,6 +890,11 @@ function TickerDetailView({
             comparisonPoints={hasTickerBenchmark ? benchmarkSeries : null}
             comparisonLabel={hasTickerBenchmark ? detail.market.benchmark?.label : undefined}
             comparisonTone="muted"
+            sourceNote={
+              detail.market.security?.source === undefined
+                ? undefined
+                : `Market data loaded from ${detail.market.security.source}`
+            }
           />
         </article>
 

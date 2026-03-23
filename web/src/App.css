@@ -918,6 +918,15 @@
     font-style: normal;
   }
 
+  .chart-source-note {
+    margin-top: 10px;
+    color: rgba(238, 242, 245, 0.28);
+    font-family: var(--font-mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
   .ring-chart {
     display: grid;
     grid-template-columns: 128px minmax(0, 1fr);
