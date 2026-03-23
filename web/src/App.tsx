@@ -459,7 +459,11 @@ function OverviewView({
                   onClick={() => onOfficialSelect(official.officialId)}
                 >
                   <span className="leader-identity">
-                    <AvatarImage name={official.displayName} size="sm" />
+                    <AvatarImage
+                      name={official.displayName}
+                      photoUrl={official.photoUrl}
+                      size="sm"
+                    />
                     <span>
                       <strong>{official.displayName}</strong>
                       <small>
@@ -663,7 +667,12 @@ function OfficialDetailView({
           <button className="text-button" type="button" onClick={onBack}>
             Back to overview
           </button>
-          <AvatarImage name={detail.summary.displayName} size="lg" ariaLabel={`${detail.summary.displayName} avatar`} />
+          <AvatarImage
+            name={detail.summary.displayName}
+            photoUrl={detail.summary.photoUrl}
+            size="lg"
+            ariaLabel={`${detail.summary.displayName} avatar`}
+          />
           <span className="section-kicker">Selected member</span>
           <h1 className="profile-name">{detail.summary.displayName}</h1>
           <p className="profile-meta">{formatOfficialMeta(detail.summary)}</p>
@@ -953,17 +962,23 @@ interface SurfaceCardProps {
 
 interface AvatarImageProps {
   name: string
+  photoUrl?: string | null
   size: 'sm' | 'lg'
   ariaLabel?: string
 }
 
-function AvatarImage({ name, size, ariaLabel }: AvatarImageProps) {
+function AvatarImage({ name, photoUrl = null, size, ariaLabel }: AvatarImageProps) {
+  const fallbackSrc = buildAvatarDataUrl(name)
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null)
+  const resolvedPhotoUrl = photoUrl !== null && photoUrl !== failedPhotoUrl ? photoUrl : null
+
   return (
     <img
       className={size === 'lg' ? 'profile-avatar profile-avatar-image' : 'leader-avatar'}
-      src={buildAvatarDataUrl(name)}
+      src={resolvedPhotoUrl ?? fallbackSrc}
       alt={ariaLabel ?? ''}
       aria-hidden={ariaLabel === undefined}
+      onError={resolvedPhotoUrl === null ? undefined : () => setFailedPhotoUrl(resolvedPhotoUrl)}
     />
   )
 }

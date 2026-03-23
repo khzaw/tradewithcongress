@@ -58,6 +58,8 @@ export function TrendChart({
         secondarySeries?.length ?? 1,
         maxValue,
       )
+  const yAxisTicks = buildYAxisTicks(maxValue)
+  const chartFloorY = CHART_HEIGHT - 18
 
   return (
     <div className="trend-chart">
@@ -80,6 +82,34 @@ export function TrendChart({
         }}
         onMouseLeave={() => setHoveredIndex(null)}
       >
+        <line
+          x1="0"
+          x2="0"
+          y1="10"
+          y2={String(chartFloorY)}
+          className="chart-axis-line"
+        />
+        <line
+          x1="0"
+          x2={String(CHART_WIDTH)}
+          y1={String(chartFloorY)}
+          y2={String(chartFloorY)}
+          className="chart-axis-line"
+        />
+        {yAxisTicks.map((tick) => (
+          <g key={`y-axis-${tick.value}`}>
+            <text
+              x="0"
+              y={String(tick.y)}
+              dx="2"
+              dy="-4"
+              textAnchor="start"
+              className="chart-axis-label chart-axis-label-y"
+            >
+              {tick.label}
+            </text>
+          </g>
+        ))}
         {comparisonPolyline !== null ? (
           <polyline
             points={comparisonPolyline}
@@ -289,6 +319,16 @@ function buildVisibleTickIndexes(pointCount: number): Set<number> {
   return indexes
 }
 
+function buildYAxisTicks(maxValue: number): Array<{ value: number; y: number; label: string }> {
+  const values = [maxValue, maxValue / 2, 0]
+
+  return values.map((value) => ({
+    value,
+    y: CHART_HEIGHT - (value / Math.max(maxValue, 1)) * (CHART_HEIGHT - 32) - 16,
+    label: formatAxisValue(value),
+  }))
+}
+
 function formatTickLabel(label: string, pointCount: number): string {
   if (pointCount <= 8) {
     return label
@@ -296,6 +336,25 @@ function formatTickLabel(label: string, pointCount: number): string {
 
   const [first, second] = label.split(' ')
   return second === undefined ? first : `${first} ${second}`
+}
+
+function formatAxisValue(value: number): string {
+  if (value >= 1000) {
+    return new Intl.NumberFormat(undefined, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value)
+  }
+
+  if (value >= 10) {
+    return new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: 0,
+    }).format(value)
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+  }).format(value)
 }
 
 function formatSeriesValue(point: SeriesPoint): string {

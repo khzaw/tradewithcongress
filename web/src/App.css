@@ -867,10 +867,20 @@
     stroke-dasharray: 2 6;
   }
 
+  .chart-axis-line {
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 0.85;
+  }
+
   .chart-axis-label {
-    fill: rgba(238, 242, 245, 0.52);
-    font-size: 8px;
+    fill: rgba(238, 242, 245, 0.42);
+    font-size: 7px;
     letter-spacing: 0.08em;
+  }
+
+  .chart-axis-label-y {
+    fill: rgba(238, 242, 245, 0.32);
+    letter-spacing: 0.06em;
   }
 
   .chart-tooltip {
