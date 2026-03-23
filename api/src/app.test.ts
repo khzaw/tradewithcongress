@@ -86,8 +86,9 @@ describe('versioned read api', () => {
     )
     const tradesBody = await tradesResponse.json()
     expect(tradesResponse.status).toBe(200)
-    expect(tradesBody.data).toHaveLength(2)
-    expect(tradesBody.data[0].transactionType).toBe('sale')
+    expect(tradesBody.data).toHaveLength(3)
+    expect(tradesBody.data[0].filingDate).toBe('2026-03-16')
+    expect(tradesBody.data[1].filingDate).toBe('2026-02-21')
   })
 
   test('returns overview metrics, activity, and recent disclosures', async () => {
@@ -98,12 +99,12 @@ describe('versioned read api', () => {
 
     expect(response.status).toBe(200)
     expect(body.data.trackedOfficials).toBe(2)
-    expect(body.data.trackedFilings).toBe(3)
-    expect(body.data.trackedTrades).toBe(3)
+    expect(body.data.trackedFilings).toBe(4)
+    expect(body.data.trackedTrades).toBe(4)
     expect(body.data.trackedAssets).toBe(3)
     expect(body.data.activeHolders).toBe(3)
-    expect(body.data.recentTrades).toHaveLength(3)
-    expect(body.data.recentTrades[0].officialDisplayName).toBe('Ro Khanna')
+    expect(body.data.recentTrades).toHaveLength(4)
+    expect(body.data.recentTrades[0].filingDate).toBe('2026-03-16')
     expect(body.data.monthlyActivity.length).toBeGreaterThan(0)
     expect(body.data.benchmark.symbol).toBe('SPY')
     expect(body.data.benchmark.points).toHaveLength(3)
@@ -128,8 +129,9 @@ describe('versioned read api', () => {
     )
     const tradesBody = await tradesResponse.json()
     expect(tradesResponse.status).toBe(200)
-    expect(tradesBody.data).toHaveLength(2)
-    expect(tradesBody.data[0].officialDisplayName).toBe('Ro Khanna')
+    expect(tradesBody.data).toHaveLength(3)
+    expect(tradesBody.data[0].filingDate).toBe('2026-03-16')
+    expect(tradesBody.data[1].filingDate).toBe('2026-02-25')
 
     const holdersResponse = await app.request(
       `${API_BASE_PATH}/tickers/NVDA/holders?limit=10`,
@@ -329,6 +331,16 @@ async function seedDatabase(db: PoolClient): Promise<void> {
         'Ro Khanna',
         '2026-02-25',
         2026
+      ),
+      (
+        1,
+        'house_clerk',
+        'nancy-ptr-followup-2026',
+        'house',
+        'periodic_transaction_report',
+        'Nancy Pelosi',
+        '2026-03-16',
+        2026
       );
 
     INSERT INTO transactions (
@@ -392,6 +404,22 @@ async function seedDatabase(db: PoolClient): Promise<void> {
         1001,
         15000,
         '$1,001 - $15,000',
+        'NVDA',
+        'NVIDIA Corporation - Common Stock (NVDA) [ST]',
+        '{}'::jsonb
+      ),
+      (
+        4,
+        1,
+        1,
+        3,
+        '2026-01-05',
+        '2026-01-05',
+        'spouse',
+        'purchase',
+        250001,
+        500000,
+        '$250,001 - $500,000',
         'NVDA',
         'NVIDIA Corporation - Common Stock (NVDA) [ST]',
         '{}'::jsonb

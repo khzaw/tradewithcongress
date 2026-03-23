@@ -449,7 +449,7 @@ export async function getOfficialTrades(
       SELECT *
       FROM official_trade_activity_vw
       WHERE official_id = $1
-      ORDER BY activity_rank
+      ORDER BY filing_date DESC, activity_date DESC, transaction_id DESC
       LIMIT $2
     `,
     [officialId, limit],
@@ -501,7 +501,7 @@ export async function getTickerTrades(
       SELECT *
       FROM ticker_trade_activity_vw
       WHERE ticker = upper($1)
-      ORDER BY ticker_activity_rank
+      ORDER BY filing_date DESC, activity_date DESC, transaction_id DESC
       LIMIT $2
     `,
     [ticker, limit],
@@ -632,7 +632,7 @@ export async function listRecentTrades(
     `
       SELECT *
       FROM official_trade_activity_vw
-      ORDER BY activity_date DESC, transaction_id DESC
+      ORDER BY filing_date DESC, activity_date DESC, transaction_id DESC
       LIMIT $1
     `,
     [limit],
