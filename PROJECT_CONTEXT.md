@@ -186,6 +186,7 @@ Current House ingestion behavior:
   - a flatter, higher-density visual system with minimal panel chrome and tighter typography
   - Tailwind CSS v4 as the frontend styling layer, with the current app surface migrated off plain global styling into Tailwind-driven theme/component CSS
   - a colder monochrome palette with the prior warm/sepia tint removed
+  - restrained accent color reintroduced at the signal layer, so charts, benchmark surfaces, active states, and buy/sell semantics read clearly without adding layout clutter
   - a quieter editorial typography system and masthead inspired by minimalist enterprise/product sites rather than loud dashboard chrome
   - compact detail-page mastheads so official and ticker desks start closer to the actual data surface
   - a newer minimal pass that removes secondary panels, ring-chart clutter, and redundant toolbar chrome in favor of one primary chart, one supporting rail, and one main table per view

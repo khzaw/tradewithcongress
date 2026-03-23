@@ -77,7 +77,7 @@
   }
 
   .topbar-link-active {
-    color: var(--text-strong);
+    color: var(--accent-violet);
   }
 
   .brand-stack {
@@ -86,7 +86,7 @@
 
   .section-kicker {
     @apply inline-flex items-center gap-2 font-mono text-[0.66rem] uppercase tracking-[0.14em];
-    color: rgba(238, 242, 245, 0.4);
+    color: rgba(142, 184, 255, 0.7);
   }
 
   .intro-headline {
@@ -143,8 +143,9 @@
   }
 
   .pill-active {
-    border-color: rgba(255, 255, 255, 0.18);
-    color: var(--text-strong);
+    border-color: rgba(142, 184, 255, 0.42);
+    color: var(--accent-violet);
+    background: rgba(142, 184, 255, 0.08);
   }
 
   .pill-muted {
@@ -197,7 +198,7 @@
   .command-button {
     min-width: 116px;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(142, 184, 255, 0.18);
     border-radius: 999px;
     background: transparent;
     color: var(--text-strong);
@@ -218,8 +219,8 @@
   }
 
   .command-button:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(142, 184, 255, 0.34);
+    background: rgba(142, 184, 255, 0.06);
   }
 
   .command-button:active,
@@ -393,6 +394,7 @@
     @apply inline-flex items-center;
     min-height: 20px;
     font-size: 0.64rem;
+    color: rgba(142, 184, 255, 0.82);
   }
 
   .note-pill-error {
@@ -446,12 +448,24 @@
     color: var(--accent-lime);
   }
 
+  .metric-lime span {
+    color: rgba(203, 232, 106, 0.76);
+  }
+
   .metric-coral strong {
     color: var(--accent-coral);
   }
 
+  .metric-coral span {
+    color: rgba(255, 145, 109, 0.76);
+  }
+
   .metric-violet strong {
-    color: #c5ced7;
+    color: var(--accent-violet);
+  }
+
+  .metric-violet span {
+    color: rgba(142, 184, 255, 0.76);
   }
 
   .metric-neutral strong {
@@ -508,6 +522,12 @@
     cursor: pointer;
   }
 
+  .leader-button:hover,
+  .ticker-list-button:hover,
+  .command-list-button:hover {
+    background: rgba(255, 255, 255, 0.018);
+  }
+
   .leader-list li:first-child .leader-button,
   .ticker-list li:first-child .ticker-list-button,
   .command-list li:first-child .command-list-button {
@@ -556,6 +576,12 @@
     color: var(--text-muted);
   }
 
+  .leader-button:hover .metric-inline,
+  .ticker-list-button:hover .metric-inline,
+  .command-list-button:hover .metric-inline {
+    color: var(--accent-lime);
+  }
+
   .profile-card {
     gap: 12px;
     padding-top: 0;
@@ -571,16 +597,16 @@
     place-items: center;
     width: 92px;
     height: 92px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(142, 184, 255, 0.16);
     border-radius: 22px;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 58%),
-      radial-gradient(circle at 24% 24%, rgba(255, 255, 255, 0.12), transparent 48%),
+      linear-gradient(180deg, rgba(142, 184, 255, 0.12), transparent 58%),
+      radial-gradient(circle at 24% 24%, rgba(203, 232, 106, 0.14), transparent 46%),
       rgba(255, 255, 255, 0.015);
   }
 
   .profile-avatar span {
-    color: var(--text-strong);
+    color: var(--accent-violet);
     font-family: var(--font-mono);
     font-size: 1.08rem;
     letter-spacing: 0.08em;
@@ -644,7 +670,7 @@
   .metric-stat strong {
     display: block;
     margin-top: 4px;
-    color: var(--text-strong);
+    color: #f4f8fb;
     font-family: var(--font-display);
     font-size: 1.18rem;
     font-weight: 510;
@@ -774,7 +800,7 @@
   }
 
   .chart-line-muted {
-    stroke: rgba(238, 242, 245, 0.46);
+    stroke: rgba(238, 242, 245, 0.42);
   }
 
   .chart-dot-lime {
@@ -918,7 +944,7 @@
   }
 
   .compact-list-row span {
-    color: var(--text-muted);
+    color: rgba(142, 184, 255, 0.72);
     font-family: var(--font-mono);
     font-size: 0.67rem;
   }
@@ -953,7 +979,7 @@
   }
 
   .data-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(142, 184, 255, 0.045);
   }
 
   .table-primary {
@@ -976,23 +1002,33 @@
     cursor: pointer;
   }
 
+  .table-link:hover {
+    color: var(--accent-violet);
+  }
+
   .ticker-pill {
     display: inline-flex;
     align-items: center;
     min-height: 20px;
     padding: 0 7px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(142, 184, 255, 0.14);
     border-radius: 999px;
     background: transparent;
-    color: var(--text-muted);
+    color: rgba(142, 184, 255, 0.78);
     font-family: var(--font-mono);
     font-size: 0.6rem;
     letter-spacing: 0.08em;
     cursor: pointer;
   }
 
+  .ticker-pill:hover {
+    border-color: rgba(142, 184, 255, 0.32);
+    background: rgba(142, 184, 255, 0.06);
+  }
+
   .ticker-pill.muted {
     cursor: default;
+    color: var(--text-muted);
   }
 
   .action-tag {
