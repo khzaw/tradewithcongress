@@ -300,7 +300,9 @@ function App() {
         onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
       />
 
-      {view.kind === 'overview' ? (
+      {view.kind === 'overview' && status === 'loading' ? (
+        <OverviewSkeleton />
+      ) : view.kind === 'overview' ? (
         <OverviewView
           dashboardState={dashboardState}
           status={status}
@@ -344,7 +346,7 @@ function SearchResultsPanel({
         <h2>{searchState.query === '' ? 'Search the disclosure graph' : searchState.query}</h2>
       </div>
 
-      {searchStatus === 'loading' ? <p className="muted-copy">Searching officials and issuers…</p> : null}
+      {searchStatus === 'loading' ? <SearchResultsSkeleton /> : null}
       {searchStatus === 'error' ? (
         <p className="muted-copy">Enter at least two characters to search officials and tickers.</p>
       ) : null}
@@ -586,11 +588,7 @@ function DetailSurface({
 }: DetailSurfaceProps) {
   if (detailState.status === 'loading') {
     return (
-      <section className="detail-layout">
-        <SurfaceCard kicker="Loading" title={`Opening ${detailState.view.kind} desk`}>
-          <p className="muted-copy">Pulling holdings, trades, and visual state from the read API.</p>
-        </SurfaceCard>
-      </section>
+      <DetailSkeleton viewKind={detailState.view.kind} />
     )
   }
 
@@ -970,6 +968,204 @@ interface SurfaceCardProps {
   title: string
   description?: string
   children?: React.ReactNode
+}
+
+interface DetailSkeletonProps {
+  viewKind: 'official' | 'ticker'
+}
+
+function DetailSkeleton({ viewKind }: DetailSkeletonProps) {
+  return (
+    <section className="detail-layout" aria-label={`Loading ${viewKind} desk`}>
+      <aside className="profile-column">
+        <article className="profile-card profile-card-official skeleton-surface">
+          <div className="skeleton-line skeleton-line-short" />
+          <div className="skeleton-avatar" />
+          <div className="skeleton-line skeleton-line-kicker" />
+          <div className="skeleton-line skeleton-line-name" />
+          <div className="skeleton-line skeleton-line-meta" />
+          <div className="profile-stat-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="metric-stat">
+                <div className="skeleton-line skeleton-line-kicker" />
+                <div className="skeleton-line skeleton-line-value" />
+              </div>
+            ))}
+          </div>
+        </article>
+      </aside>
+
+      <div className="detail-stage">
+        <section className="metric-grid">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article key={index} className="metric-card skeleton-surface">
+              <div className="skeleton-line skeleton-line-kicker" />
+              <div className="skeleton-line skeleton-line-metric" />
+              <div className="skeleton-line skeleton-line-meta" />
+            </article>
+          ))}
+        </section>
+
+        <article className="surface-card skeleton-surface">
+          <div className="surface-heading">
+            <div className="skeleton-stack">
+              <div className="skeleton-line skeleton-line-kicker" />
+              <div className="skeleton-line skeleton-line-title" />
+            </div>
+            <div className="skeleton-line skeleton-line-pill" />
+          </div>
+          <div className="skeleton-chart" />
+        </article>
+
+        <article className="surface-card skeleton-surface">
+          <div className="surface-heading">
+            <div className="skeleton-stack">
+              <div className="skeleton-line skeleton-line-kicker" />
+              <div className="skeleton-line skeleton-line-title" />
+            </div>
+            <div className="skeleton-line skeleton-line-pill" />
+          </div>
+          <TableSkeleton rows={6} columns={viewKind === 'official' ? 6 : 6} />
+        </article>
+      </div>
+    </section>
+  )
+}
+
+function OverviewSkeleton() {
+  return (
+    <section className="overview-layout" aria-label="Loading overview">
+      <aside className="rail-column">
+        <section className="hero-surface skeleton-surface">
+          <div className="skeleton-line skeleton-line-kicker" />
+          <div className="skeleton-line skeleton-line-hero" />
+          <div className="skeleton-line skeleton-line-hero secondary" />
+          <div className="skeleton-line skeleton-line-meta" />
+        </section>
+
+        <article className="surface-card skeleton-surface">
+          <div className="surface-heading compact">
+            <div className="skeleton-line skeleton-line-kicker" />
+            <div className="skeleton-line skeleton-line-short" />
+          </div>
+          <ListSkeleton rows={5} />
+        </article>
+
+        <article className="surface-card skeleton-surface">
+          <div className="surface-heading compact">
+            <div className="skeleton-line skeleton-line-kicker" />
+            <div className="skeleton-line skeleton-line-short" />
+          </div>
+          <ListSkeleton rows={5} />
+        </article>
+      </aside>
+
+      <div className="overview-stage">
+        <section className="metric-grid">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article key={index} className="metric-card skeleton-surface">
+              <div className="skeleton-line skeleton-line-kicker" />
+              <div className="skeleton-line skeleton-line-metric" />
+              <div className="skeleton-line skeleton-line-meta" />
+            </article>
+          ))}
+        </section>
+
+        <article className="surface-card skeleton-surface">
+          <div className="surface-heading">
+            <div className="skeleton-stack">
+              <div className="skeleton-line skeleton-line-kicker" />
+              <div className="skeleton-line skeleton-line-title" />
+            </div>
+            <div className="skeleton-line skeleton-line-pill" />
+          </div>
+          <div className="skeleton-chart" />
+        </article>
+
+        <article className="surface-card skeleton-surface">
+          <div className="surface-heading">
+            <div className="skeleton-stack">
+              <div className="skeleton-line skeleton-line-kicker" />
+              <div className="skeleton-line skeleton-line-title" />
+            </div>
+          </div>
+          <TableSkeleton rows={6} columns={5} />
+        </article>
+      </div>
+    </section>
+  )
+}
+
+function SearchResultsSkeleton() {
+  return (
+    <div className="search-grid" aria-label="Searching disclosure graph">
+      <article className="surface-card skeleton-surface">
+        <div className="surface-heading compact">
+          <div className="skeleton-line skeleton-line-kicker" />
+          <div className="skeleton-line skeleton-line-short" />
+        </div>
+        <ListSkeleton rows={4} />
+      </article>
+      <article className="surface-card skeleton-surface">
+        <div className="surface-heading compact">
+          <div className="skeleton-line skeleton-line-kicker" />
+          <div className="skeleton-line skeleton-line-short" />
+        </div>
+        <ListSkeleton rows={4} />
+      </article>
+    </div>
+  )
+}
+
+interface ListSkeletonProps {
+  rows: number
+}
+
+function ListSkeleton({ rows }: ListSkeletonProps) {
+  return (
+    <div className="skeleton-list">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="skeleton-list-row">
+          <div className="skeleton-stack">
+            <div className="skeleton-line skeleton-line-item" />
+            <div className="skeleton-line skeleton-line-item-meta" />
+          </div>
+          <div className="skeleton-line skeleton-line-inline" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+interface TableSkeletonProps {
+  rows: number
+  columns: number
+}
+
+function TableSkeleton({ rows, columns }: TableSkeletonProps) {
+  return (
+    <div
+      className="skeleton-table"
+      aria-hidden="true"
+      style={{ ['--skeleton-columns' as string]: columns }}
+    >
+      <div className="skeleton-table-head">
+        {Array.from({ length: columns }).map((_, index) => (
+          <div key={index} className="skeleton-line skeleton-line-header" />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <div key={rowIndex} className="skeleton-table-row">
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <div
+              key={`${rowIndex}-${colIndex}`}
+              className={`skeleton-line ${colIndex === 0 ? 'skeleton-line-item' : 'skeleton-line-cell'}`}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function SurfaceCard({ kicker, title, description, children }: SurfaceCardProps) {
