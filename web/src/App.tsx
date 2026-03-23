@@ -227,7 +227,7 @@ function App() {
 
   return (
     <main className="studio-shell">
-      <header className="topbar">
+      <header className={view.kind === 'overview' ? 'topbar' : 'topbar topbar-detail'}>
         <div className="topbar-headline">
           <div className="topbar-row">
             <div className="brand-wordmark">tradewithcongress</div>
@@ -239,13 +239,27 @@ function App() {
           </div>
 
           <div className="brand-stack">
-            <span className="section-kicker">Congressional trading desk</span>
-            <h1 className="intro-headline">
-              Track portfolios, trade flow, and filing lag from public congressional disclosures.
-            </h1>
-            <p className="brand-copy">
-              Search members or tickers, inspect latest disclosed holdings, and keep every claim tied to the source filing.
-            </p>
+            {view.kind === 'overview' ? (
+              <>
+                <span className="section-kicker">Congressional trading desk</span>
+                <h1 className="intro-headline">
+                  Track portfolios, trade flow, and filing lag from public congressional disclosures.
+                </h1>
+                <p className="brand-copy">
+                  Search members or tickers, inspect latest disclosed holdings, benchmark activity against the market, and keep every claim tied to the source filing.
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="section-kicker">Trading desk</span>
+                <h1 className="detail-headline">
+                  {view.kind === 'official' ? 'Official profile' : 'Ticker profile'}
+                </h1>
+                <p className="brand-copy">
+                  Move between members, issuers, and the underlying disclosure ledger without losing the market or filing context.
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -274,6 +288,32 @@ function App() {
             />
             <button className="command-button" type="submit">Search</button>
           </form>
+
+          <div className="topbar-ledger" aria-label="Coverage summary">
+            <LedgerItem
+              label="Coverage"
+              value={`${formatInteger(dashboardState.overview.trackedOfficials)} officials`}
+              detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings indexed`}
+            />
+            <LedgerItem
+              label="Trade flow"
+              value={`${formatInteger(dashboardState.overview.trackedTrades)} parsed trades`}
+              detail={latestActivityLabel(dashboardState.overview)}
+            />
+            <LedgerItem
+              label="Benchmark"
+              value={
+                dashboardState.overview.benchmark === null
+                  ? 'SPY lane ready'
+                  : `${dashboardState.overview.benchmark.symbol} cached`
+              }
+              detail={
+                dashboardState.overview.benchmark === null
+                  ? 'Set market data env to activate'
+                  : `As of ${formatDate(dashboardState.overview.benchmark.asOfDate) ?? 'n/a'}`
+              }
+            />
+          </div>
         </div>
       </header>
 
@@ -1081,6 +1121,22 @@ function MetricStat({ label, value }: MetricStatProps) {
     <div className="metric-stat">
       <span>{label}</span>
       <strong>{value}</strong>
+    </div>
+  )
+}
+
+interface LedgerItemProps {
+  label: string
+  value: string
+  detail: string
+}
+
+function LedgerItem({ label, value, detail }: LedgerItemProps) {
+  return (
+    <div className="topbar-ledger-row">
+      <span className="topbar-ledger-label">{label}</span>
+      <strong className="topbar-ledger-value">{value}</strong>
+      <small className="topbar-ledger-detail">{detail}</small>
     </div>
   )
 }

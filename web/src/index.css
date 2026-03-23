@@ -1,19 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Host Grotesk", "Segoe UI", sans-serif;
-  --font-sans: "Host Grotesk", "Segoe UI", sans-serif;
+  --font-display: "Geist", "Segoe UI", sans-serif;
+  --font-sans: "Geist", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 
-  --color-ink: #ece7de;
-  --color-muted: #a39d93;
-  --color-subtle: rgba(236, 231, 222, 0.28);
-  --color-accent-lime: #b8c676;
-  --color-accent-coral: #c28b72;
-  --color-accent-violet: #8b95a8;
-  --color-surface-border: rgba(255, 255, 255, 0.05);
-  --color-surface-strong: rgba(255, 255, 255, 0.095);
+  --color-ink: #eef2f5;
+  --color-muted: #98a1aa;
+  --color-subtle: rgba(238, 242, 245, 0.28);
+  --color-accent-lime: #c3d86d;
+  --color-accent-coral: #8caecd;
+  --color-accent-violet: #7b8592;
+  --color-surface-border: rgba(255, 255, 255, 0.07);
+  --color-surface-strong: rgba(255, 255, 255, 0.11);
 
   --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -48,12 +48,13 @@
   body {
     margin: 0;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 12%),
-      #0a0a0b;
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 10%),
+      #080a0d;
     color: theme(--color-ink);
     font-family: theme(--font-sans);
-    font-size: 14.5px;
-    line-height: 1.6;
+    font-size: 14px;
+    line-height: 1.58;
     font-weight: 400;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -72,20 +73,20 @@
 
   h1 {
     font-family: theme(--font-display);
-    font-weight: 500;
+    font-weight: 520;
     text-wrap: balance;
   }
 
   h2,
   h3 {
-    font-weight: 450;
-    letter-spacing: -0.035em;
+    font-weight: 500;
+    letter-spacing: -0.04em;
     text-wrap: balance;
   }
 
   h2 {
-    font-size: clamp(1.05rem, 1.45vw, 1.35rem);
-    line-height: 1.12;
+    font-size: clamp(1.02rem, 1.3vw, 1.28rem);
+    line-height: 1.08;
   }
 
   button,
@@ -96,7 +97,7 @@
 
   input:focus,
   button:focus {
-    outline: 2px solid rgba(255, 255, 255, 0.25);
+    outline: 2px solid rgba(255, 255, 255, 0.2);
     outline-offset: 2px;
   }
 }
