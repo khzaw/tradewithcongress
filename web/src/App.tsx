@@ -978,6 +978,18 @@ function AvatarImage({ name, photoUrl = null, size, ariaLabel }: AvatarImageProp
     setIsLoaded(resolvedPhotoUrl === null)
   }, [resolvedPhotoUrl])
 
+  if (size === 'lg' && resolvedPhotoUrl === null) {
+    return (
+      <div
+        className="profile-avatar"
+        aria-label={ariaLabel}
+        aria-hidden={ariaLabel === undefined}
+      >
+        <span>{buildInitials(name)}</span>
+      </div>
+    )
+  }
+
   return (
     <img
       className={[
