@@ -18,6 +18,7 @@ export interface OfficialSummary {
   districtCode: string | null
   party: string | null
   isCurrent: boolean
+  photoUrl: string | null
   aliases: string[]
   filingCount: number
   latestFilingDate: string | null
@@ -213,6 +214,7 @@ interface OfficialSummaryRow {
   district_code: string | null
   party: string | null
   is_current: boolean
+  photo_url: string | null
   aliases: string[]
   filing_count: NumericLike
   latest_filing_date: DateLike
@@ -780,6 +782,7 @@ function mapOfficialSummary(row: OfficialSummaryRow): OfficialSummary {
     districtCode: row.district_code,
     party: row.party,
     isCurrent: row.is_current,
+    photoUrl: row.photo_url,
     aliases: row.aliases,
     filingCount: toNumber(row.filing_count) ?? 0,
     latestFilingDate: formatDate(row.latest_filing_date),

@@ -67,11 +67,13 @@ describe('versioned read api', () => {
     expect(listResponse.status).toBe(200)
     expect(listBody.data).toHaveLength(2)
     expect(listBody.data[0].displayName).toBe('Nancy Pelosi')
+    expect(listBody.data[0].photoUrl).toBe('https://unitedstates.github.io/images/congress/225x275/P000197.jpg')
 
     const detailResponse = await app.request(`${API_BASE_PATH}/officials/1`)
     const detailBody = await detailResponse.json()
     expect(detailResponse.status).toBe(200)
     expect(detailBody.data.positionCount).toBe(2)
+    expect(detailBody.data.photoUrl).toBe('https://unitedstates.github.io/images/congress/225x275/P000197.jpg')
 
     const portfolioResponse = await app.request(
       `${API_BASE_PATH}/officials/1/portfolio?limit=10`,
@@ -224,7 +226,9 @@ async function seedDatabase(db: PoolClient): Promise<void> {
       district_code,
       party,
       is_current,
-      source_ref
+      source_ref,
+      bioguide_id,
+      photo_url
     )
     VALUES
       (
@@ -238,7 +242,9 @@ async function seedDatabase(db: PoolClient): Promise<void> {
         '11',
         'D',
         TRUE,
-        'house:ca:11:pelosi:nancy'
+        'house:ca:11:pelosi:nancy',
+        'P000197',
+        'https://unitedstates.github.io/images/congress/225x275/P000197.jpg'
       ),
       (
         'house',
@@ -251,7 +257,9 @@ async function seedDatabase(db: PoolClient): Promise<void> {
         '17',
         'D',
         TRUE,
-        'house:ca:17:khanna:ro'
+        'house:ca:17:khanna:ro',
+        'K000389',
+        'https://unitedstates.github.io/images/congress/225x275/K000389.jpg'
       );
 
     INSERT INTO official_aliases (official_id, alias, alias_kind)

@@ -8,6 +8,7 @@ export interface OfficialSummary {
   districtCode: string | null
   party: string | null
   isCurrent: boolean
+  photoUrl: string | null
   aliases: string[]
   filingCount: number
   latestFilingDate: string | null
