@@ -2,7 +2,7 @@
 
 @layer components {
   .studio-shell {
-    @apply mx-auto w-[min(1680px,calc(100vw-40px))] pt-5 pb-14;
+    @apply mx-auto w-[min(1700px,calc(100vw-72px))] pt-7 pb-18;
   }
 
   .topbar,
@@ -44,8 +44,10 @@
   }
 
   .topbar {
-    grid-template-columns: minmax(320px, 0.92fr) minmax(360px, 1.08fr);
-    @apply items-end border-b border-white/6 pb-6;
+    grid-template-columns: minmax(420px, 0.98fr) minmax(420px, 1.02fr);
+    column-gap: 42px;
+    row-gap: 28px;
+    @apply items-start border-b border-white/6 pb-8;
   }
 
   .topbar-detail {
@@ -81,7 +83,8 @@
   }
 
   .brand-stack {
-    gap: 10px;
+    gap: 16px;
+    padding-top: 10px;
   }
 
   .section-kicker {
@@ -90,12 +93,12 @@
   }
 
   .intro-headline {
-    max-width: 14ch;
+    max-width: 11.5ch;
     color: var(--text-strong);
     font-family: var(--font-display);
-    font-size: clamp(2.35rem, 4.15vw, 4.45rem);
+    font-size: clamp(2.2rem, 3.7vw, 4rem);
     font-weight: 520;
-    line-height: 0.93;
+    line-height: 0.98;
     letter-spacing: -0.07em;
   }
 
@@ -111,14 +114,14 @@
 
   .brand-copy,
   .muted-copy {
-    max-width: 62ch;
+    max-width: 58ch;
     color: var(--text-muted);
     text-wrap: pretty;
   }
 
   .brand-copy {
-    font-size: 1rem;
-    line-height: 1.55;
+    font-size: 1.02rem;
+    line-height: 1.62;
   }
 
   .muted-copy {
@@ -127,7 +130,8 @@
   }
 
   .topbar-meta {
-    gap: 16px;
+    gap: 22px;
+    padding-top: 12px;
   }
 
   .pill-row,
@@ -236,20 +240,18 @@
   .topbar-ledger {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0;
+    gap: 26px;
   }
 
   .topbar-ledger-row {
     display: grid;
-    gap: 4px;
-    min-height: 74px;
-    padding: 12px 0 0 18px;
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 6px;
+    min-height: 88px;
+    padding: 16px 0 0;
   }
 
   .topbar-ledger-row:first-child {
     padding-left: 0;
-    border-left: 0;
   }
 
   .topbar-ledger-label,
@@ -300,7 +302,7 @@
   }
 
   .search-surface {
-    @apply mt-5 pt-4;
+    @apply mt-8 pt-5;
   }
 
   .search-grid {
@@ -312,12 +314,12 @@
   .detail-layout {
     grid-template-columns: minmax(280px, 0.45fr) minmax(0, 1.55fr);
     align-items: start;
-    margin-top: 22px;
+    margin-top: 34px;
   }
 
   .rail-column,
   .profile-column {
-    gap: 18px;
+    gap: 26px;
     min-width: 0;
   }
 
@@ -338,7 +340,7 @@
     position: relative;
     overflow: hidden;
     min-width: 0;
-    padding-top: 10px;
+    padding-top: 14px;
     background: transparent;
   }
 
@@ -380,10 +382,10 @@
   }
 
   .hero-surface h1 {
-    max-width: 13ch;
+    max-width: 14ch;
     font-size: clamp(1.45rem, 2vw, 2rem);
     font-weight: 520;
-    line-height: 1.02;
+    line-height: 1.08;
     letter-spacing: -0.055em;
   }
 
