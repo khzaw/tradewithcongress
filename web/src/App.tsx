@@ -30,6 +30,7 @@ import {
   relativeOverviewReturn,
   totalEstimatedTradeVolume,
 } from './insights.ts'
+import { resolveIssuerLogoUrl } from './logos.ts'
 import { buildViewSearch, parseView, type AppView } from './navigation.ts'
 
 const EMPTY_STATE: DashboardState = {
@@ -493,6 +494,7 @@ function OverviewView({
                   <span className="ticker-identity">
                     <AssetMark
                       ticker={ticker.ticker}
+                      issuerName={ticker.representativeIssuerName}
                       assetName={ticker.representativeAssetName}
                     />
                     <span>
@@ -984,16 +986,23 @@ function AvatarImage({ name, photoUrl = null, size, ariaLabel }: AvatarImageProp
 
 interface AssetMarkProps {
   ticker: string
+  issuerName?: string | null
   assetName: string
 }
 
-function AssetMark({ ticker, assetName }: AssetMarkProps) {
+function AssetMark({ ticker, issuerName = null, assetName }: AssetMarkProps) {
+  const fallbackSrc = buildAssetMarkDataUrl(ticker, assetName)
+  const logoUrl = resolveIssuerLogoUrl({ ticker, issuerName, assetName })
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null)
+  const resolvedLogoUrl = logoUrl !== null && logoUrl !== failedLogoUrl ? logoUrl : null
+
   return (
     <img
       className="asset-mark"
-      src={buildAssetMarkDataUrl(ticker, assetName)}
+      src={resolvedLogoUrl ?? fallbackSrc}
       alt=""
       aria-hidden="true"
+      onError={resolvedLogoUrl === null ? undefined : () => setFailedLogoUrl(resolvedLogoUrl)}
     />
   )
 }

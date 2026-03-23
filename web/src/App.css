@@ -585,7 +585,7 @@
   .leader-avatar {
     width: 34px;
     height: 34px;
-    border-radius: 12px;
+    border-radius: 999px;
     border: 1px solid rgba(142, 184, 255, 0.1);
     background: rgba(255, 255, 255, 0.02);
   }
@@ -593,9 +593,11 @@
   .asset-mark {
     width: 34px;
     height: 34px;
+    padding: 6px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(247, 249, 252, 0.96);
+    object-fit: contain;
   }
 
   .leader-button small,
@@ -637,7 +639,7 @@
     width: 92px;
     height: 92px;
     border: 1px solid rgba(142, 184, 255, 0.16);
-    border-radius: 22px;
+    border-radius: 999px;
     background:
       linear-gradient(180deg, rgba(142, 184, 255, 0.12), transparent 58%),
       radial-gradient(circle at 24% 24%, rgba(203, 232, 106, 0.14), transparent 46%),
@@ -654,7 +656,7 @@
   .profile-avatar-image {
     width: 92px;
     height: 92px;
-    border-radius: 22px;
+    border-radius: 999px;
     border: 1px solid rgba(142, 184, 255, 0.12);
     background: rgba(255, 255, 255, 0.02);
   }
