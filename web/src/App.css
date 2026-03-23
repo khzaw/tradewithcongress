@@ -976,6 +976,12 @@
     white-space: nowrap;
   }
 
+  .table-col-owner {
+    color: rgba(238, 242, 245, 0.52);
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
   .data-table th {
     color: var(--text-subtle);
     font-family: var(--font-mono);

@@ -1129,7 +1129,7 @@ function HoldingsTable({ positions, onTickerSelect }: HoldingsTableProps) {
         <tr>
           <th className="table-col-ticker">Ticker</th>
           <th>Asset</th>
-          <th>Owner</th>
+          <th className="table-col-owner">Owner</th>
           <th>Est. amount</th>
           <th>Confidence</th>
           <th>As of</th>
@@ -1156,7 +1156,7 @@ function HoldingsTable({ positions, onTickerSelect }: HoldingsTableProps) {
                 <strong>{formatAssetLabel(position.assetName, position.ticker)}</strong>
               </div>
             </td>
-            <td>{position.ownerType}</td>
+            <td className="table-col-owner">{position.ownerType}</td>
             <td>{position.amountRangeLabel ?? 'n/a'}</td>
             <td>{position.confidenceLabel}</td>
             <td>{formatDate(position.asOfFilingDate) ?? 'n/a'}</td>
@@ -1234,7 +1234,7 @@ function HolderTable({ holders, onOfficialSelect }: HolderTableProps) {
       <thead>
         <tr>
           <th>Official</th>
-          <th>Owner</th>
+          <th className="table-col-owner">Owner</th>
           <th>Est. amount</th>
           <th>Confidence</th>
           <th>Snapshot</th>
@@ -1252,7 +1252,7 @@ function HolderTable({ holders, onOfficialSelect }: HolderTableProps) {
                 {holder.officialDisplayName}
               </button>
             </td>
-            <td>{holder.ownerType}</td>
+            <td className="table-col-owner">{holder.ownerType}</td>
             <td>{holder.amountRangeLabel ?? 'n/a'}</td>
             <td>{holder.confidenceLabel}</td>
             <td>{formatDate(holder.asOfFilingDate) ?? 'n/a'}</td>
