@@ -36,6 +36,7 @@ export function TrendChart({
   )
   const polyline = buildPolyline(series, maxValue)
   const comparisonPolyline = secondarySeries === null ? null : buildPolyline(secondarySeries, maxValue)
+  const visibleTickIndexes = buildVisibleTickIndexes(series.length)
 
   return (
     <div className="trend-chart">
@@ -51,19 +52,6 @@ export function TrendChart({
         role="img"
         aria-label={label}
       >
-        {[0.2, 0.5, 0.8].map((ratio) => {
-          const y = CHART_HEIGHT - ratio * (CHART_HEIGHT - 32) - 16
-          return (
-            <line
-              key={ratio}
-              x1="0"
-              x2={String(CHART_WIDTH)}
-              y1={String(y)}
-              y2={String(y)}
-              className="chart-grid-line"
-            />
-          )
-        })}
         {comparisonPolyline !== null ? (
           <polyline
             points={comparisonPolyline}
@@ -79,18 +67,24 @@ export function TrendChart({
         {series.map((point, index) => {
           const x = (index / Math.max(series.length - 1, 1)) * CHART_WIDTH
           const y = CHART_HEIGHT - (point.value / maxValue) * (CHART_HEIGHT - 32) - 16
+          const isVisibleTick = visibleTickIndexes.has(index)
+          const tickLabel = formatTickLabel(point.label, series.length)
 
           return (
             <g key={`${point.label}-${index}`}>
-              <circle cx={String(x)} cy={String(y)} r="4" className={`chart-dot chart-dot-${tone}`} />
-              <text
-                x={String(x)}
-                y={String(CHART_HEIGHT - 2)}
-                textAnchor={index === 0 ? 'start' : index === series.length - 1 ? 'end' : 'middle'}
-                className="chart-axis-label"
-              >
-                {point.label}
-              </text>
+              {index === series.length - 1 ? (
+                <circle cx={String(x)} cy={String(y)} r="2.75" className={`chart-dot chart-dot-${tone}`} />
+              ) : null}
+              {isVisibleTick ? (
+                <text
+                  x={String(x)}
+                  y={String(CHART_HEIGHT - 6)}
+                  textAnchor={index === 0 ? 'start' : index === series.length - 1 ? 'end' : 'middle'}
+                  className="chart-axis-label"
+                >
+                  {tickLabel}
+                </text>
+              ) : null}
             </g>
           )
         })}
@@ -183,4 +177,34 @@ function buildPolyline(
       return `${x},${y}`
     })
     .join(' ')
+}
+
+function buildVisibleTickIndexes(pointCount: number): Set<number> {
+  if (pointCount <= 1) {
+    return new Set([0])
+  }
+
+  const step = pointCount <= 6
+    ? 1
+    : pointCount <= 12
+      ? 2
+      : pointCount <= 24
+        ? 4
+        : 6
+  const indexes = new Set<number>([0, pointCount - 1])
+
+  for (let index = 0; index < pointCount; index += step) {
+    indexes.add(index)
+  }
+
+  return indexes
+}
+
+function formatTickLabel(label: string, pointCount: number): string {
+  if (pointCount <= 8) {
+    return label
+  }
+
+  const [first, second] = label.split(' ')
+  return second === undefined ? first : `${first} ${second}`
 }
