@@ -246,20 +246,29 @@ interface RequestOptions {
   signal?: AbortSignal
 }
 
+const HOMEPAGE_OFFICIAL_FETCH_LIMIT = 12
+const HOMEPAGE_FEATURED_OFFICIAL_COUNT = 3
+
 export async function fetchHomepageData(
   options: RequestOptions = {},
 ): Promise<DashboardState> {
   const [metaBody, overviewBody, officialsBody, tickersBody] = await Promise.all([
     getJson<MetaResponse>('/api/v1/meta', options),
     getJson<ResponseEnvelope<OverviewSnapshot>>('/api/v1/overview?limit=12', options),
-    getJson<ResponseEnvelope<OfficialSummary[]>>('/api/v1/officials?limit=3', options),
+    getJson<ResponseEnvelope<OfficialSummary[]>>(
+      `/api/v1/officials?limit=${HOMEPAGE_OFFICIAL_FETCH_LIMIT}`,
+      options,
+    ),
     getJson<ResponseEnvelope<TickerSummary[]>>('/api/v1/tickers?limit=3', options),
   ])
 
   return {
     apiVersion: metaBody.apiVersion,
     overview: overviewBody.data,
-    topOfficials: officialsBody.data,
+    topOfficials: pickFeaturedOfficials(
+      officialsBody.data,
+      HOMEPAGE_FEATURED_OFFICIAL_COUNT,
+    ),
     topTickers: tickersBody.data,
   }
 }
@@ -336,4 +345,14 @@ async function getJson<TData>(
   }
 
   return (await response.json()) as TData
+}
+
+function pickFeaturedOfficials(
+  officials: OfficialSummary[],
+  count: number,
+): OfficialSummary[] {
+  const withPhotos = officials.filter((official) => official.photoUrl !== null)
+  const withoutPhotos = officials.filter((official) => official.photoUrl === null)
+
+  return [...withPhotos, ...withoutPhotos].slice(0, count)
 }
