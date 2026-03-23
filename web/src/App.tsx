@@ -813,6 +813,11 @@ function TickerDetailView({
   const hasTickerBenchmark =
     detail.market.security !== null && detail.market.benchmark !== null
   const latestClose = detail.market.security?.points[detail.market.security.points.length - 1]?.close ?? null
+  const tickerSubtitle = buildTickerSubtitle(
+    detail.summary.representativeAssetName,
+    detail.summary.representativeIssuerName,
+    detail.summary.representativeAssetType,
+  )
 
   return (
     <section className="detail-layout detail-layout-ticker">
@@ -824,9 +829,7 @@ function TickerDetailView({
           <span className="section-kicker">Ticker intelligence</span>
           <h1 className="profile-name">{detail.summary.ticker}</h1>
           <p className="profile-meta">{detail.summary.representativeAssetName}</p>
-          <p className="profile-submeta">
-            {detail.summary.representativeIssuerName ?? detail.summary.representativeAssetType}
-          </p>
+          {tickerSubtitle !== null ? <p className="profile-submeta">{tickerSubtitle}</p> : null}
 
           <div className="profile-stat-grid">
             <MetricStat label="Trades" value={formatInteger(detail.summary.transactionCount)} />
@@ -839,24 +842,6 @@ function TickerDetailView({
           </div>
         </article>
 
-        <SurfaceCard kicker="Market overlay" title="Benchmark lane">
-          <p className="muted-copy">
-            {hasTickerBenchmark
-              ? `Weekly adjusted price history is cached from ${detail.market.benchmark?.source ?? 'the market provider'} so this ticker can be read against a live SPY benchmark instead of a placeholder.`
-              : 'The benchmark lane is fully wired, but local market data is inactive until ALPHA_VANTAGE_API_KEY is configured.'}
-          </p>
-          <div className="profile-rail-meta">
-            <div>
-              <span>Last close</span>
-              <strong>{formatPrice(latestClose)}</strong>
-            </div>
-            <div>
-              <span>Vs SPY</span>
-              <strong>{formatSignedPercentOrPlaceholder(benchmarkSpread)}</strong>
-            </div>
-          </div>
-        </SurfaceCard>
-
         <article className="surface-card rail-compact">
           <div className="surface-heading compact">
             <span className="section-kicker">Action mix</span>
@@ -867,35 +852,6 @@ function TickerDetailView({
       </aside>
 
       <div className="detail-stage">
-        <section className="metric-grid">
-          <MetricCard
-            label="Last close"
-            value={formatPrice(latestClose)}
-            tone="neutral"
-            detail={detail.market.security?.asOfDate === null || detail.market.security === null
-              ? 'Market series unavailable'
-              : `As of ${formatDate(detail.market.security.asOfDate) ?? 'n/a'}`}
-          />
-          <MetricCard
-            label="Ticker return"
-            value={formatSignedPercentOrPlaceholder(securityReturn)}
-            tone="coral"
-            detail={`${detail.summary.ticker} normalized performance`}
-          />
-          <MetricCard
-            label="Vs SPY"
-            value={formatSignedPercentOrPlaceholder(benchmarkSpread)}
-            tone="violet"
-            detail="Relative performance spread"
-          />
-          <MetricCard
-            label="Avg. filing lag"
-            value={averageLag === null ? 'n/a' : `${averageLag}d`}
-            tone="lime"
-            detail="Trade date to filed date"
-          />
-        </section>
-
         <article className="surface-card">
           <div className="surface-heading">
             <div>
@@ -906,11 +862,24 @@ function TickerDetailView({
               {detail.market.security?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
             </span>
           </div>
-          <p className="muted-copy">
-            {hasTickerBenchmark
-              ? 'The price lane is real market data. The ledger below stays disclosure-derived.'
-              : 'Once market data is configured, this lane will compare normalized issuer performance against SPY.'}
-          </p>
+          <div className="profile-rail-meta">
+            <div>
+              <span>Last close</span>
+              <strong>{formatPrice(latestClose)}</strong>
+            </div>
+            <div>
+              <span>Return</span>
+              <strong>{formatSignedPercentOrPlaceholder(securityReturn)}</strong>
+            </div>
+            <div>
+              <span>Vs SPY</span>
+              <strong>{formatSignedPercentOrPlaceholder(benchmarkSpread)}</strong>
+            </div>
+            <div>
+              <span>As of</span>
+              <strong>{formatDate(detail.market.security?.asOfDate ?? null) ?? 'n/a'}</strong>
+            </div>
+          </div>
           <TrendChart
             points={securitySeries ?? tradeSeries}
             label={securitySeries === null ? 'Estimated disclosed volume' : detail.summary.ticker}
@@ -927,7 +896,11 @@ function TickerDetailView({
               <span className="section-kicker">Disclosure flow</span>
               <h2>{formatCompactCurrency(estimatedVolume)}</h2>
             </div>
-            <span className="note-pill">{formatInteger(detail.summary.tradingOfficialCount)} officials</span>
+            <span className="note-pill">
+              {averageLag === null
+                ? `${formatInteger(detail.summary.tradingOfficialCount)} officials`
+                : `Avg lag ${averageLag}d`}
+            </span>
           </div>
           <p className="muted-copy">
             Parsed trade rows span {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
@@ -1600,6 +1573,25 @@ function formatAssetLabel(value: string, ticker: string | null): string {
 
   const tickerPattern = new RegExp(`\\s*\\(${escapeRegExp(ticker)}\\)$`)
   return withoutAssetType.replace(tickerPattern, '')
+}
+
+function buildTickerSubtitle(
+  assetName: string,
+  issuerName: string | null,
+  assetType: string,
+): string | null {
+  if (issuerName !== null) {
+    const normalizedAsset = assetName.trim().toLowerCase()
+    const normalizedIssuer = issuerName.trim().toLowerCase()
+
+    if (normalizedAsset === normalizedIssuer || normalizedAsset.startsWith(`${normalizedIssuer} -`)) {
+      return assetType.trim() === '' ? null : assetType
+    }
+
+    return issuerName
+  }
+
+  return assetType.trim() === '' ? null : assetType
 }
 
 function normalizeActionTone(value: string): 'buy' | 'sell' | 'neutral' {
