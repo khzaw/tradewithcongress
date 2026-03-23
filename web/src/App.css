@@ -825,7 +825,7 @@
   }
 
   .tone-muted {
-    color: rgba(238, 242, 245, 0.56);
+    color: rgba(238, 242, 245, 0.34);
   }
 
   .chart-line-lime {
@@ -841,7 +841,8 @@
   }
 
   .chart-line-muted {
-    stroke: rgba(238, 242, 245, 0.42);
+    stroke: rgba(238, 242, 245, 0.24);
+    stroke-dasharray: 3 7;
   }
 
   .chart-dot-lime {
@@ -854,6 +855,10 @@
 
   .chart-dot-violet {
     fill: #c5ced7;
+  }
+
+  .chart-dot-muted {
+    fill: rgba(238, 242, 245, 0.28);
   }
 
   .chart-hover-rule {
