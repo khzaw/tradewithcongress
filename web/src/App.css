@@ -83,8 +83,9 @@
   }
 
   .brand-stack {
-    gap: 16px;
-    padding-top: 10px;
+    max-width: 34rem;
+    gap: 12px;
+    padding-top: 8px;
   }
 
   .section-kicker {
@@ -93,13 +94,13 @@
   }
 
   .intro-headline {
-    max-width: 11.5ch;
+    max-width: 10.2ch;
     color: var(--text-strong);
     font-family: var(--font-display);
-    font-size: clamp(2.2rem, 3.7vw, 4rem);
+    font-size: clamp(1.9rem, 3.15vw, 3.25rem);
     font-weight: 520;
-    line-height: 0.98;
-    letter-spacing: -0.07em;
+    line-height: 0.94;
+    letter-spacing: -0.075em;
   }
 
   .detail-headline {
@@ -120,8 +121,9 @@
   }
 
   .brand-copy {
-    font-size: 1.02rem;
-    line-height: 1.62;
+    max-width: 40ch;
+    font-size: 0.96rem;
+    line-height: 1.58;
   }
 
   .muted-copy {
