@@ -533,7 +533,7 @@ function OverviewView({
           <div className="surface-heading">
             <div>
               <span className="section-kicker">Benchmark surface</span>
-              <h2>Disclosure activity vs S&amp;P 500 proxy</h2>
+              <h2>Disclosure activity vs S&amp;P 500</h2>
             </div>
             <span className="note-pill">
               {dashboardState.overview.benchmark?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
@@ -856,7 +856,7 @@ function TickerDetailView({
           <div className="surface-heading">
             <div>
               <span className="section-kicker">Market performance</span>
-              <h2>{detail.summary.ticker} vs S&amp;P 500 proxy</h2>
+              <h2>{detail.summary.ticker} vs S&amp;P 500</h2>
             </div>
             <span className="note-pill">
               {detail.market.security?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}

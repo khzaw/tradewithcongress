@@ -30,7 +30,7 @@ describe('market data client', () => {
     })
 
     expect(series.symbol).toBe('SPY')
-    expect(series.label).toBe('S&P 500 proxy (SPY)')
+    expect(series.label).toBe('S&P 500 (SPY)')
     expect(series.points).toHaveLength(3)
     expect(series.points[0]).toEqual({
       date: '2026-01-02',

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import type { BreakdownSegment, SeriesPoint } from './insights.ts'
 
 interface TrendChartProps {
@@ -25,6 +27,7 @@ export function TrendChart({
   comparisonLabel,
   comparisonTone = 'muted',
 }: TrendChartProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const series = points.length > 0 ? points : [{ label: 'N/A', value: 0 }]
   const secondarySeries = comparisonPoints !== null && comparisonPoints.length > 0
     ? comparisonPoints
@@ -37,6 +40,22 @@ export function TrendChart({
   const polyline = buildPolyline(series, maxValue)
   const comparisonPolyline = secondarySeries === null ? null : buildPolyline(secondarySeries, maxValue)
   const visibleTickIndexes = buildVisibleTickIndexes(series.length)
+  const activeIndex = hoveredIndex
+  const activePoint = activeIndex === null ? null : series[activeIndex] ?? null
+  const comparisonPoint = activeIndex === null || secondarySeries === null
+    ? null
+    : secondarySeries[Math.min(activeIndex, secondarySeries.length - 1)] ?? null
+  const activeCoordinates = activePoint === null
+    ? null
+    : buildPointCoordinates(activePoint, activeIndex ?? 0, series.length, maxValue)
+  const comparisonCoordinates = comparisonPoint === null || activeIndex === null
+    ? null
+    : buildPointCoordinates(
+        comparisonPoint,
+        Math.min(activeIndex, (secondarySeries?.length ?? 1) - 1),
+        secondarySeries?.length ?? 1,
+        maxValue,
+      )
 
   return (
     <div className="trend-chart">
@@ -51,6 +70,13 @@ export function TrendChart({
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         role="img"
         aria-label={label}
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect()
+          const relativeX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width)
+          const nextIndex = Math.round((relativeX / rect.width) * Math.max(series.length - 1, 0))
+          setHoveredIndex(nextIndex)
+        }}
+        onMouseLeave={() => setHoveredIndex(null)}
       >
         {comparisonPolyline !== null ? (
           <polyline
@@ -64,15 +90,39 @@ export function TrendChart({
           fill="none"
           className={`chart-line chart-line-${tone}`}
         />
+        {activeCoordinates !== null ? (
+          <>
+            <line
+              x1={String(activeCoordinates.x)}
+              x2={String(activeCoordinates.x)}
+              y1="8"
+              y2={String(CHART_HEIGHT - 22)}
+              className="chart-hover-rule"
+            />
+            {comparisonCoordinates !== null ? (
+              <circle
+                cx={String(comparisonCoordinates.x)}
+                cy={String(comparisonCoordinates.y)}
+                r="3"
+                className={`chart-dot chart-dot-${comparisonTone}`}
+              />
+            ) : null}
+            <circle
+              cx={String(activeCoordinates.x)}
+              cy={String(activeCoordinates.y)}
+              r="3.4"
+              className={`chart-dot chart-dot-${tone}`}
+            />
+          </>
+        ) : null}
         {series.map((point, index) => {
-          const x = (index / Math.max(series.length - 1, 1)) * CHART_WIDTH
-          const y = CHART_HEIGHT - (point.value / maxValue) * (CHART_HEIGHT - 32) - 16
+          const { x, y } = buildPointCoordinates(point, index, series.length, maxValue)
           const isVisibleTick = visibleTickIndexes.has(index)
           const tickLabel = formatTickLabel(point.label, series.length)
 
           return (
             <g key={`${point.label}-${index}`}>
-              {index === series.length - 1 ? (
+              {hoveredIndex === null && index === series.length - 1 ? (
                 <circle cx={String(x)} cy={String(y)} r="2.75" className={`chart-dot chart-dot-${tone}`} />
               ) : null}
               {isVisibleTick ? (
@@ -89,6 +139,29 @@ export function TrendChart({
           )
         })}
       </svg>
+      {activeCoordinates !== null && activePoint !== null ? (
+        <div
+          className={`chart-tooltip ${activeCoordinates.x < CHART_WIDTH * 0.18 ? 'is-left' : activeCoordinates.x > CHART_WIDTH * 0.82 ? 'is-right' : ''}`}
+          style={{
+            left: `${(activeCoordinates.x / CHART_WIDTH) * 100}%`,
+            top: `${Math.max(activeCoordinates.y - 8, 18)}px`,
+          }}
+        >
+          <div className="chart-tooltip-date">{activePoint.hoverLabel ?? activePoint.label}</div>
+          <div className="chart-tooltip-values">
+            <span className={`chart-tooltip-series tone-${tone}`}>
+              <strong>{label}</strong>
+              <em>{formatSeriesValue(activePoint)}</em>
+            </span>
+            {comparisonPoint !== null && comparisonLabel !== undefined ? (
+              <span className={`chart-tooltip-series tone-${comparisonTone}`}>
+                <strong>{comparisonLabel}</strong>
+                <em>{formatSeriesValue(comparisonPoint)}</em>
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -179,6 +252,17 @@ function buildPolyline(
     .join(' ')
 }
 
+function buildPointCoordinates(
+  point: SeriesPoint,
+  index: number,
+  pointCount: number,
+  maxValue: number,
+): { x: number; y: number } {
+  const x = (index / Math.max(pointCount - 1, 1)) * CHART_WIDTH
+  const y = CHART_HEIGHT - (point.value / maxValue) * (CHART_HEIGHT - 32) - 16
+  return { x, y }
+}
+
 function buildVisibleTickIndexes(pointCount: number): Set<number> {
   if (pointCount <= 1) {
     return new Set([0])
@@ -207,4 +291,19 @@ function formatTickLabel(label: string, pointCount: number): string {
 
   const [first, second] = label.split(' ')
   return second === undefined ? first : `${first} ${second}`
+}
+
+function formatSeriesValue(point: SeriesPoint): string {
+  if (point.displayValue !== undefined) {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(point.displayValue)
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    notation: point.value >= 1000 ? 'compact' : 'standard',
+    maximumFractionDigits: point.value >= 1000 ? 1 : 0,
+  }).format(point.value)
 }

@@ -70,8 +70,8 @@ const EXAMPLE_TRADES: TickerTradeActivity[] = [
 describe('insights helpers', () => {
   test('builds monthly trade series from activity dates and amount midpoints', () => {
     expect(buildMonthlyTradeSeries(EXAMPLE_TRADES, 6)).toEqual([
-      { label: 'Feb', value: 75000 },
-      { label: 'Mar', value: 8000 },
+      { label: 'Feb', value: 75000, hoverLabel: 'Feb 1' },
+      { label: 'Mar', value: 8000, hoverLabel: 'Mar 1' },
     ])
   })
 
@@ -170,7 +170,7 @@ describe('insights helpers', () => {
   test('builds market and benchmark series from normalized close data', () => {
     const benchmark: MarketSeries = {
       symbol: 'SPY',
-      label: 'S&P 500 proxy (SPY)',
+      label: 'S&P 500 (SPY)',
       source: 'test',
       asOfDate: '2026-03-20',
       points: [
@@ -197,14 +197,14 @@ describe('insights helpers', () => {
     }
 
     expect(buildOverviewBenchmarkSeries(overview)).toEqual([
-      { label: 'Jan', value: 100 },
-      { label: 'Feb', value: 104 },
-      { label: 'Mar', value: 112 },
+      { label: 'Jan', value: 100, displayValue: 100, hoverLabel: 'Jan 1' },
+      { label: 'Feb', value: 104, displayValue: 104, hoverLabel: 'Feb 1' },
+      { label: 'Mar', value: 112, displayValue: 112, hoverLabel: 'Mar 1' },
     ])
     expect(buildMarketSeries(benchmark, 3)).toEqual([
-      { label: 'Jan 2', value: 100 },
-      { label: 'Feb 6', value: 104 },
-      { label: 'Mar 6', value: 112 },
+      { label: 'Jan 2', value: 100, displayValue: 100, hoverLabel: 'Jan 2, 2026' },
+      { label: 'Feb 6', value: 104, displayValue: 104, hoverLabel: 'Feb 6, 2026' },
+      { label: 'Mar 6', value: 112, displayValue: 112, hoverLabel: 'Mar 6, 2026' },
     ])
     expect(relativeMarketReturn(benchmark)).toBe(12)
     expect(relativeMarketSpread(benchmark, {

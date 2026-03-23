@@ -708,6 +708,7 @@
   }
 
   .trend-chart {
+    position: relative;
     margin-top: 10px;
   }
 
@@ -799,10 +800,61 @@
     fill: #c5ced7;
   }
 
+  .chart-hover-rule {
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 1;
+    stroke-dasharray: 2 6;
+  }
+
   .chart-axis-label {
     fill: rgba(238, 242, 245, 0.52);
     font-size: 8px;
     letter-spacing: 0.08em;
+  }
+
+  .chart-tooltip {
+    position: absolute;
+    min-width: 148px;
+    max-width: 220px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 12, 16, 0.94);
+    transform: translate(-50%, calc(-100% - 12px));
+    pointer-events: none;
+    backdrop-filter: blur(14px);
+  }
+
+  .chart-tooltip.is-left {
+    transform: translate(0, calc(-100% - 12px));
+  }
+
+  .chart-tooltip.is-right {
+    transform: translate(-100%, calc(-100% - 12px));
+  }
+
+  .chart-tooltip-date {
+    margin-bottom: 8px;
+    color: rgba(238, 242, 245, 0.58);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .chart-tooltip-values {
+    display: grid;
+    gap: 6px;
+  }
+
+  .chart-tooltip-series {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 0.74rem;
+  }
+
+  .chart-tooltip-series strong,
+  .chart-tooltip-series em {
+    font-style: normal;
   }
 
   .ring-chart {

@@ -216,7 +216,7 @@ export function parseAlphaVantageWeeklyAdjustedSeries(
 
   return {
     symbol,
-    label: symbol === 'SPY' ? 'S&P 500 proxy (SPY)' : symbol,
+    label: symbol === 'SPY' ? 'S&P 500 (SPY)' : symbol,
     source: DATA_SOURCE,
     asOfDate: payload['Meta Data']?.['3. Last Refreshed'] ?? points[points.length - 1]?.date ?? null,
     points: points.map((point) => ({

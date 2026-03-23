@@ -9,6 +9,8 @@ import type {
 export interface SeriesPoint {
   label: string
   value: number
+  displayValue?: number
+  hoverLabel?: string
 }
 
 export interface BreakdownSegment {
@@ -54,6 +56,8 @@ export function buildOverviewBenchmarkSeries(
     return {
       label: formatMonthLabel(bucket.monthStart),
       value: lastKnownValue,
+      displayValue: lastKnownValue,
+      hoverLabel: formatMonthLabel(bucket.monthStart, true),
     }
   })
 }
@@ -77,6 +81,7 @@ export function buildMonthlyTradeSeries(
   return sortedMonths.map(([monthStart, value]) => ({
     label: formatMonthLabel(`${monthStart}-01`),
     value,
+    hoverLabel: formatMonthLabel(`${monthStart}-01`, true),
   }))
 }
 
@@ -175,6 +180,8 @@ export function buildMarketSeries(
   return series.points.slice(-pointLimit).map((point) => ({
     label: formatMonthLabel(point.date, true),
     value: point.normalizedClose,
+    displayValue: point.close,
+    hoverLabel: formatHoverDate(point.date),
   }))
 }
 
@@ -258,7 +265,7 @@ function normalizeSeries(points: SeriesPoint[]): SeriesPoint[] {
   }
 
   return points.map((point) => ({
-    label: point.label,
+    ...point,
     value: (point.value / baseline) * 100,
   }))
 }
@@ -270,4 +277,12 @@ function formatMonthLabel(value: string, includeDay = false): string {
     month: 'short',
     ...(includeDay ? { day: 'numeric' } : {}),
   }).format(date)
+}
+
+function formatHoverDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(value))
 }
