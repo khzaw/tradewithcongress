@@ -1,6 +1,6 @@
 # Project Context
 
-Last updated: 2026-03-21
+Last updated: 2026-03-23
 
 ## What this project is
 
@@ -183,7 +183,9 @@ Current House ingestion behavior:
   - visual trade/portfolio breakdowns driven by live local disclosure data
   - a flatter, higher-density visual system with minimal panel chrome and tighter typography
   - Tailwind CSS v4 as the frontend styling layer, with the current app surface migrated off plain global styling into Tailwind-driven theme/component CSS
+  - a colder monochrome palette with the prior warm/sepia tint removed
   - a quieter editorial typography system and masthead inspired by minimalist enterprise/product sites rather than loud dashboard chrome
+  - compact detail-page mastheads so official and ticker desks start closer to the actual data surface
   - a live S&P 500 proxy lane when `ALPHA_VANTAGE_API_KEY` is configured, with graceful fallback copy when local market data is disabled
 
 Validated local state as of 2026-03-21:
@@ -235,7 +237,7 @@ Not implemented yet:
 - richer security search and canonicalization beyond current ticker/issuer matching
 - frontend still uses lightweight query-state navigation rather than a dedicated client router
 - overview, official, and ticker pages now have a stronger visual shell and first-pass visualizations, but they do not yet expose richer filters, filing detail links, or filing source drill-down
-- S&P comparison panels are currently product/UI scaffolding only; a real market benchmark feed still needs to be added
+- benchmark market data requires `ALPHA_VANTAGE_API_KEY`; without it, the UI falls back to explanatory placeholder copy instead of live comparison data
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
 
@@ -248,8 +250,9 @@ The current frontend surface is now good enough to browse real local data end to
 - search results can deep-link into those same detail views
 - URLs can be shared with `?official={id}` or `?ticker={symbol}`
 - official detail views now include profile metrics, holdings tables, trade tables, and visual portfolio/trade breakdowns
-- official detail views now lean into a left-rail profile layout with denser concentration and mix surfaces
-- ticker detail views now include issuer metrics, latest holders, trade ledgers, and party/action visual breakdowns
+- official detail views now lean into a left-rail profile layout with denser concentration and mix surfaces plus a compressed desk header
+- ticker detail views now include issuer metrics, latest holders, trade ledgers, party/action visual breakdowns, and the same compact desk framing
+- the current visual system is flatter and denser than before, using thin separators, compact stat strips, and restrained monochrome typography instead of boxed dashboard panels
 - detail views are still intentionally read-only
 
 ## Source systems
