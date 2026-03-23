@@ -233,7 +233,7 @@ function App() {
                   Track congressional portfolios.
                 </h1>
                 <p className="brand-copy">
-                  Follow senators, representatives, and candidates through disclosed trades, holding snapshots, filing lag, and market context tied back to the source filing.
+                  Follow senators, representatives, and candidates through trades, holdings, filing lag, and market context.
                 </p>
               </>
             ) : (
@@ -243,7 +243,7 @@ function App() {
                   {view.kind === 'official' ? 'Official profile' : 'Ticker profile'}
                 </h1>
                 <p className="brand-copy">
-                  Move between members, issuers, and the underlying disclosure ledger without losing the market or filing context.
+                  Move between members, issuers, and filings without losing the market or timing context.
                 </p>
               </>
             )}
@@ -268,23 +268,23 @@ function App() {
               <LedgerItem
                 label="Coverage"
                 value={`${formatInteger(dashboardState.overview.trackedOfficials)} officials`}
-                detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings indexed`}
+                detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings`}
               />
               <LedgerItem
                 label="Trade flow"
-                value={`${formatInteger(dashboardState.overview.trackedTrades)} parsed trades`}
+                value={`${formatInteger(dashboardState.overview.trackedTrades)} trades`}
                 detail={latestActivityLabel(dashboardState.overview)}
               />
               <LedgerItem
                 label="Benchmark"
                 value={
                   dashboardState.overview.benchmark === null
-                    ? 'SPY lane ready'
-                    : `${dashboardState.overview.benchmark.symbol} cached`
+                    ? 'SPY'
+                    : dashboardState.overview.benchmark.symbol
                 }
                 detail={
                   dashboardState.overview.benchmark === null
-                    ? 'Set market data env to activate'
+                    ? 'Data not available'
                     : `As of ${formatDate(dashboardState.overview.benchmark.asOfDate) ?? 'n/a'}`
                 }
               />
@@ -343,7 +343,7 @@ function SearchResultsPanel({
     <section className="search-surface">
       <div className="surface-heading">
         <span className="section-kicker">Universal search</span>
-        <h2>{searchState.query === '' ? 'Search the disclosure graph' : searchState.query}</h2>
+        <h2>{searchState.query === '' ? 'Search disclosures' : searchState.query}</h2>
       </div>
 
       {searchStatus === 'loading' ? <SearchResultsSkeleton /> : null}
@@ -369,7 +369,7 @@ function SearchResultsPanel({
                     <span>
                       <strong>{official.displayName}</strong>
                       <small>
-                        {official.chamber} · {official.stateCode ?? 'n/a'} · alias {official.matchedAlias}
+                        {official.chamber} · {official.stateCode ?? 'n/a'}
                       </small>
                     </span>
                     <span className="metric-inline">
@@ -397,7 +397,7 @@ function SearchResultsPanel({
                     <span>
                       <strong>{ticker.ticker}</strong>
                       <small>
-                        {formatRepresentativeAssetName(ticker.representativeAssetName)} · match {ticker.matchedField}
+                        {formatRepresentativeAssetName(ticker.representativeAssetName)}
                       </small>
                     </span>
                     <span className="metric-inline">
@@ -440,9 +440,9 @@ function OverviewView({
       <aside className="rail-column">
         <section className="hero-surface">
           <span className="section-kicker">Current coverage</span>
-          <h1>House disclosures are live now. Senate is the next ingest lane.</h1>
+          <h1>House disclosures are live now. Senate is next.</h1>
           <p className="muted-copy">
-            Every table and chart here is rebuilt from parsed House filings, with timing, source provenance, and confidence preserved.
+            Explore House disclosures with dates, holdings, and trade activity in one place.
           </p>
         </section>
 
@@ -510,19 +510,19 @@ function OverviewView({
             label="Tracked officials"
             value={formatInteger(dashboardState.overview.trackedOfficials)}
             tone="lime"
-            detail="House disclosures indexed"
+            detail="House disclosures"
           />
           <MetricCard
-            label="Parsed trades"
+            label="Trades"
             value={formatInteger(dashboardState.overview.trackedTrades)}
             tone="coral"
-            detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings across the graph`}
+            detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings`}
           />
           <MetricCard
             label="Active holders"
             value={formatInteger(dashboardState.overview.activeHolders)}
             tone="violet"
-            detail={`${formatInteger(dashboardState.overview.trackedAssets)} canonical assets`}
+            detail={`${formatInteger(dashboardState.overview.trackedAssets)} tracked assets`}
           />
           <MetricCard
             label="Vs SPY"
@@ -545,8 +545,8 @@ function OverviewView({
           </div>
           <p className="muted-copy">
             {hasOverviewBenchmark
-              ? 'Trade flow is rebased to the first visible month and compared against cached SPY weekly adjusted closes.'
-              : 'The benchmark lane is wired and will activate once market data is configured.'}
+              ? 'See disclosure activity alongside the broader market.'
+              : 'Data not available.'}
           </p>
           <TrendChart
             points={overviewSeries}
@@ -558,7 +558,7 @@ function OverviewView({
             sourceNote={
               dashboardState.overview.benchmark?.source === undefined
                 ? undefined
-                : `Market data loaded from ${dashboardState.overview.benchmark.source}`
+                : `Market data: ${dashboardState.overview.benchmark.source}`
             }
           />
         </article>
@@ -567,9 +567,9 @@ function OverviewView({
           <div className="surface-heading">
             <div>
               <span className="section-kicker">Recent disclosures</span>
-              <h2>Latest parsed trade flow</h2>
+              <h2>Latest activity</h2>
             </div>
-            {status === 'error' ? <span className="note-pill note-pill-error">API offline</span> : null}
+            {status === 'error' ? <span className="note-pill note-pill-error">Data unavailable</span> : null}
           </div>
           <RecentTradeTable
             trades={dashboardState.overview.recentTrades}
@@ -700,13 +700,13 @@ function OfficialDetailView({
             label="Trades"
             value={formatInteger(detail.summary.transactionCount)}
             tone="neutral"
-            detail="Parsed transaction rows"
+            detail="Disclosed trades"
           />
           <MetricCard
             label="Filings"
             value={formatInteger(detail.summary.filingCount)}
             tone="coral"
-            detail="Indexed disclosure filings"
+            detail="Disclosures on record"
           />
           <MetricCard
             label="Est. volume"
@@ -753,7 +753,7 @@ function OfficialDetailView({
             <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="lime" />
           ) : (
             <p className="muted-copy">
-              This profile currently resolves to holdings-only disclosure data. The table below is the latest disclosed snapshot, and PTR-backed trade history will appear once parsed transactions exist for this member.
+              Recent trade activity is not available for this profile right now.
             </p>
           )}
         </article>
@@ -774,18 +774,18 @@ function OfficialDetailView({
             <div className="surface-heading">
               <div>
                 <span className="section-kicker">Recent trades</span>
-                <h2>Parsed transaction timeline</h2>
+                <h2>Trade timeline</h2>
               </div>
               <span className="note-pill">
-                {delayDays === null ? 'Lag unavailable' : `Avg lag ${delayDays}d`}
+                {delayDays === null ? 'n/a' : `Avg lag ${delayDays}d`}
               </span>
             </div>
             <TradeTable trades={detail.trades} onTickerSelect={onTickerSelect} />
           </article>
         ) : (
-          <SurfaceCard kicker="Recent trades" title="No parsed transaction rows yet">
+          <SurfaceCard kicker="Recent trades" title="No recent trade activity">
             <p className="muted-copy">
-              This profile currently resolves to holdings-only disclosure data. PTR-backed trade history will appear here once parsed transactions exist for this member.
+              Trade activity is not available for this profile right now.
             </p>
           </SurfaceCard>
         )}
@@ -893,7 +893,7 @@ function TickerDetailView({
             sourceNote={
               detail.market.security?.source === undefined
                 ? undefined
-                : `Market data loaded from ${detail.market.security.source}`
+                : `Market data: ${detail.market.security.source}`
             }
           />
         </article>
@@ -911,7 +911,7 @@ function TickerDetailView({
             </span>
           </div>
           <p className="muted-copy">
-            Parsed trade rows span {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
+            Activity spans {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
             {formatDate(detail.summary.latestTransactionDate) ?? 'n/a'}.
           </p>
         </article>
@@ -933,7 +933,7 @@ function TickerDetailView({
           <div className="surface-heading">
             <div>
               <span className="section-kicker">Trade ledger</span>
-              <h2>Every parsed ticker-level trade row</h2>
+              <h2>Trade history</h2>
             </div>
             <span className="note-pill">{detail.summary.ticker}</span>
           </div>
@@ -1112,7 +1112,7 @@ function OverviewSkeleton() {
 
 function SearchResultsSkeleton() {
   return (
-    <div className="search-grid" aria-label="Searching disclosure graph">
+    <div className="search-grid" aria-label="Searching disclosures">
       <article className="surface-card skeleton-surface">
         <div className="surface-heading compact">
           <div className="skeleton-line skeleton-line-kicker" />
