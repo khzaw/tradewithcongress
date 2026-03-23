@@ -186,6 +186,7 @@ Current House ingestion behavior:
   - a colder monochrome palette with the prior warm/sepia tint removed
   - a quieter editorial typography system and masthead inspired by minimalist enterprise/product sites rather than loud dashboard chrome
   - compact detail-page mastheads so official and ticker desks start closer to the actual data surface
+  - a newer minimal pass that removes secondary panels, ring-chart clutter, and redundant toolbar chrome in favor of one primary chart, one supporting rail, and one main table per view
   - a live S&P 500 proxy lane when `ALPHA_VANTAGE_API_KEY` is configured, with graceful fallback copy when local market data is disabled
 
 Validated local state as of 2026-03-21:
@@ -253,6 +254,7 @@ The current frontend surface is now good enough to browse real local data end to
 - official detail views now lean into a left-rail profile layout with denser concentration and mix surfaces plus a compressed desk header
 - ticker detail views now include issuer metrics, latest holders, trade ledgers, party/action visual breakdowns, and the same compact desk framing
 - the current visual system is flatter and denser than before, using thin separators, compact stat strips, and restrained monochrome typography instead of boxed dashboard panels
+- the latest frontend pass reduces visible UI chrome further by collapsing redundant sections and keeping each page closer to a dossier or briefing page than a dashboard wall
 - detail views are still intentionally read-only
 
 ## Source systems

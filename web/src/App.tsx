@@ -14,15 +14,13 @@ import {
   type SearchState,
   type TickerDetail,
 } from './api.ts'
-import { RingChart, TrendChart } from './charts.tsx'
+import { TrendChart } from './charts.tsx'
 import {
   averageFilingDelayDays,
-  buildAssetTypeBreakdown,
   buildMarketSeries,
   buildMonthlyTradeSeries,
   buildOverviewBenchmarkSeries,
   buildOverviewSeries,
-  buildPartyBreakdown,
   buildPortfolioExposure,
   buildTradeTypeBreakdown,
   latestActivityLabel,
@@ -55,17 +53,6 @@ const EMPTY_SEARCH_STATE: SearchState = {
   officials: [],
   tickers: [],
 }
-
-const STATIC_SECTORS = [
-  'Technology',
-  'Healthcare',
-  'Defense',
-  'Finance',
-  'Energy',
-  'Industrials',
-]
-
-const STATIC_ASSET_TYPES = ['Stocks', 'ETFs', 'Options', 'Bonds', 'Funds']
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -232,9 +219,8 @@ function App() {
           <div className="topbar-row">
             <div className="brand-wordmark">tradewithcongress</div>
             <nav className="topbar-links" aria-label="Project status">
-              <span className="topbar-link">Docs</span>
-              <span className="topbar-link">Search</span>
               <span className="topbar-link topbar-link-active">House live</span>
+              <span className="topbar-link">Senate next</span>
             </nav>
           </div>
 
@@ -264,19 +250,6 @@ function App() {
         </div>
 
         <div className="topbar-meta">
-          <nav className="pill-row" aria-label="Primary views">
-            <button
-              className={view.kind === 'overview' ? 'pill pill-active' : 'pill'}
-              type="button"
-              onClick={() => navigateToView({ kind: 'overview' })}
-            >
-              Overview
-            </button>
-            <span className="pill pill-muted">House live</span>
-            <span className="pill pill-muted">Senate next</span>
-            <span className="pill pill-muted">API {dashboardState.apiVersion}</span>
-          </nav>
-
           <form className="command-form" onSubmit={(event) => void handleSearchSubmit(event)}>
             <input
               className="command-input"
@@ -289,31 +262,33 @@ function App() {
             <button className="command-button" type="submit">Search</button>
           </form>
 
-          <div className="topbar-ledger" aria-label="Coverage summary">
-            <LedgerItem
-              label="Coverage"
-              value={`${formatInteger(dashboardState.overview.trackedOfficials)} officials`}
-              detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings indexed`}
-            />
-            <LedgerItem
-              label="Trade flow"
-              value={`${formatInteger(dashboardState.overview.trackedTrades)} parsed trades`}
-              detail={latestActivityLabel(dashboardState.overview)}
-            />
-            <LedgerItem
-              label="Benchmark"
-              value={
-                dashboardState.overview.benchmark === null
-                  ? 'SPY lane ready'
-                  : `${dashboardState.overview.benchmark.symbol} cached`
-              }
-              detail={
-                dashboardState.overview.benchmark === null
-                  ? 'Set market data env to activate'
-                  : `As of ${formatDate(dashboardState.overview.benchmark.asOfDate) ?? 'n/a'}`
-              }
-            />
-          </div>
+          {view.kind === 'overview' ? (
+            <div className="topbar-ledger" aria-label="Coverage summary">
+              <LedgerItem
+                label="Coverage"
+                value={`${formatInteger(dashboardState.overview.trackedOfficials)} officials`}
+                detail={`${formatInteger(dashboardState.overview.trackedFilings)} filings indexed`}
+              />
+              <LedgerItem
+                label="Trade flow"
+                value={`${formatInteger(dashboardState.overview.trackedTrades)} parsed trades`}
+                detail={latestActivityLabel(dashboardState.overview)}
+              />
+              <LedgerItem
+                label="Benchmark"
+                value={
+                  dashboardState.overview.benchmark === null
+                    ? 'SPY lane ready'
+                    : `${dashboardState.overview.benchmark.symbol} cached`
+                }
+                detail={
+                  dashboardState.overview.benchmark === null
+                    ? 'Set market data env to activate'
+                    : `As of ${formatDate(dashboardState.overview.benchmark.asOfDate) ?? 'n/a'}`
+                }
+              />
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -468,31 +443,55 @@ function OverviewView({
           </p>
         </section>
 
-        <SurfaceCard
-          kicker="Market surface"
-          title={latestActivityLabel(dashboardState.overview)}
-          description="Benchmark panels are already part of the layout. Live S&P price history is the next data feed."
-        />
-
-        <SurfaceCard kicker="Sectors" title="Explore by thesis">
-          <div className="pill-cloud">
-            {STATIC_SECTORS.map((sector) => (
-              <span key={sector} className="pill pill-muted">
-                {sector}
-              </span>
-            ))}
+        <article className="surface-card rail-compact">
+          <div className="surface-heading compact">
+            <span className="section-kicker">Watchlist</span>
+            <h3>{dashboardState.topOfficials.length}</h3>
           </div>
-        </SurfaceCard>
-
-        <SurfaceCard kicker="Asset types" title="Filter surface">
-          <div className="pill-cloud">
-            {STATIC_ASSET_TYPES.map((assetType) => (
-              <span key={assetType} className="pill pill-muted">
-                {assetType}
-              </span>
+          <ul className="leader-list">
+            {dashboardState.topOfficials.map((official) => (
+              <li key={official.officialId}>
+                <button
+                  className="leader-button"
+                  type="button"
+                  onClick={() => onOfficialSelect(official.officialId)}
+                >
+                  <span>
+                    <strong>{official.displayName}</strong>
+                    <small>
+                      {official.chamber} · {official.stateCode ?? 'n/a'}
+                    </small>
+                  </span>
+                  <span className="metric-inline">{official.positionCount}</span>
+                </button>
+              </li>
             ))}
+          </ul>
+        </article>
+
+        <article className="surface-card rail-compact">
+          <div className="surface-heading compact">
+            <span className="section-kicker">Most traded</span>
+            <h3>{dashboardState.topTickers.length}</h3>
           </div>
-        </SurfaceCard>
+          <ul className="ticker-list">
+            {dashboardState.topTickers.map((ticker) => (
+              <li key={ticker.ticker}>
+                <button
+                  className="ticker-list-button"
+                  type="button"
+                  onClick={() => onTickerSelect(ticker.ticker)}
+                >
+                  <span>
+                    <strong>{ticker.ticker}</strong>
+                    <small>{ticker.representativeAssetName}</small>
+                  </span>
+                  <span className="metric-inline">{ticker.transactionCount}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </article>
       </aside>
 
       <div className="overview-stage">
@@ -516,7 +515,7 @@ function OverviewView({
             detail={`${formatInteger(dashboardState.overview.trackedAssets)} canonical assets`}
           />
           <MetricCard
-            label="Flow delta"
+            label="Vs SPY"
             value={formatSignedPercent(benchmarkSpread)}
             tone="neutral"
             detail={
@@ -527,89 +526,30 @@ function OverviewView({
           />
         </section>
 
-        <section className="showcase-grid">
-          <article className="surface-card showcase-primary">
-            <div className="surface-heading">
-              <div>
-                <span className="section-kicker">Performance surface</span>
-                <h2>Disclosure activity index vs S&amp;P 500 proxy</h2>
-              </div>
-              <span className="note-pill">
-                {dashboardState.overview.benchmark?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
-              </span>
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">Benchmark surface</span>
+              <h2>Disclosure activity vs S&amp;P 500 proxy</h2>
             </div>
-            <p className="muted-copy">
-              {hasOverviewBenchmark
-                ? 'Trade flow is rebased to the first visible month so it can be compared against cached SPY weekly adjusted closes without pretending the two series are the same instrument.'
-                : 'The comparison lane is wired to cached SPY weekly adjusted closes and will activate once a market-data key is configured.'}
-            </p>
-            <TrendChart
-              points={overviewSeries}
-              label="Disclosure activity index"
-              tone="coral"
-              comparisonPoints={hasOverviewBenchmark ? overviewBenchmarkSeries : null}
-              comparisonLabel={hasOverviewBenchmark ? dashboardState.overview.benchmark?.label : undefined}
-              comparisonTone="muted"
-            />
-          </article>
-
-          <div className="showcase-side">
-            <article className="surface-card">
-              <div className="surface-heading compact">
-                <span className="section-kicker">Portfolio leaders</span>
-                <h3>Watchlist</h3>
-              </div>
-              <ul className="leader-list">
-                {dashboardState.topOfficials.map((official, index) => (
-                  <li key={official.officialId}>
-                    <button
-                      className="leader-button"
-                      type="button"
-                      onClick={() => onOfficialSelect(official.officialId)}
-                    >
-                      <span className="leader-rank">{String(index + 1).padStart(2, '0')}</span>
-                      <span>
-                        <strong>{official.displayName}</strong>
-                        <small>
-                          {official.party ?? 'N/A'} · {official.chamber} · {official.stateCode ?? 'n/a'}
-                        </small>
-                      </span>
-                      <span className="metric-inline">
-                        {official.positionCount} holdings
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </article>
-
-            <article className="surface-card">
-              <div className="surface-heading compact">
-                <span className="section-kicker">Most traded issuers</span>
-                <h3>Ticker flow</h3>
-              </div>
-              <ul className="ticker-list">
-                {dashboardState.topTickers.map((ticker) => (
-                  <li key={ticker.ticker}>
-                    <button
-                      className="ticker-list-button"
-                      type="button"
-                      onClick={() => onTickerSelect(ticker.ticker)}
-                    >
-                      <span>
-                        <strong>{ticker.ticker}</strong>
-                        <small>{ticker.representativeAssetName}</small>
-                      </span>
-                      <span className="metric-inline">
-                        {ticker.transactionCount} trades
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </article>
+            <span className="note-pill">
+              {dashboardState.overview.benchmark?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
+            </span>
           </div>
-        </section>
+          <p className="muted-copy">
+            {hasOverviewBenchmark
+              ? 'Trade flow is rebased to the first visible month and compared against cached SPY weekly adjusted closes.'
+              : 'The benchmark lane is wired and will activate once market data is configured.'}
+          </p>
+          <TrendChart
+            points={overviewSeries}
+            label="Disclosure activity index"
+            tone="coral"
+            comparisonPoints={hasOverviewBenchmark ? overviewBenchmarkSeries : null}
+            comparisonLabel={hasOverviewBenchmark ? dashboardState.overview.benchmark?.label : undefined}
+            comparisonTone="muted"
+          />
+        </article>
 
         <article className="surface-card">
           <div className="surface-heading">
@@ -696,10 +636,7 @@ function OfficialDetailView({
   onTickerSelect,
 }: OfficialDetailViewProps) {
   const tradeSeries = buildMonthlyTradeSeries(detail.trades)
-  const portfolioExposure = buildPortfolioExposure(detail.portfolio)
   const topHoldings = buildPortfolioExposure(detail.portfolio, 6)
-  const assetTypeBreakdown = buildAssetTypeBreakdown(detail.portfolio)
-  const tradeTypes = buildTradeTypeBreakdown(detail.trades)
   const delayDays = averageFilingDelayDays(detail.trades)
   const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
   const hasTradeHistory = detail.trades.length > 0
@@ -756,26 +693,11 @@ function OfficialDetailView({
             <span className="section-kicker">Top disclosed positions</span>
             <h3>{topHoldings.length}</h3>
           </div>
-          <BreakdownBarList
-            segments={topHoldings}
-            formatter={(value) => formatCompactCurrency(value)}
-          />
+          <CompactList segments={topHoldings} formatter={(value) => formatCompactCurrency(value)} />
         </article>
       </aside>
 
       <div className="detail-stage">
-        <div className="detail-toolbar">
-          <div className="detail-toolbar-copy">
-            <span className="section-kicker">Official desk</span>
-            <h2>{detail.summary.displayName}</h2>
-          </div>
-          <div className="detail-toolbar-meta">
-            <span className="pill pill-muted">{formatInteger(detail.summary.positionCount)} positions</span>
-            <span className="pill pill-muted">{formatInteger(issuerCount)} issuers</span>
-            <span className="pill pill-muted">Benchmark next</span>
-          </div>
-        </div>
-
         <section className="metric-grid">
           <MetricCard
             label="Trades"
@@ -803,58 +725,28 @@ function OfficialDetailView({
           />
         </section>
 
-        <section className="showcase-grid official-showcase-grid">
-          <article className="surface-card showcase-primary">
-            <div className="surface-heading">
-              <div>
-                <span className="section-kicker">
-                  {hasTradeHistory ? 'Trade cadence' : 'Portfolio concentration'}
-                </span>
-                <h2>
-                  {hasTradeHistory
-                    ? 'Disclosed trading flow over time'
-                    : 'Largest disclosed positions'}
-                </h2>
-              </div>
-              <span className="note-pill">
-                {hasTradeHistory
-                  ? `Avg lag ${delayDays === null ? 'n/a' : `${delayDays}d`}`
-                  : `${detail.portfolio.length} disclosed rows`}
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">
+                {hasTradeHistory ? 'Trade cadence' : 'Portfolio concentration'}
               </span>
+              <h2>
+                {hasTradeHistory ? 'Disclosed trading flow over time' : 'Largest disclosed positions'}
+              </h2>
             </div>
-            {hasTradeHistory ? (
-              <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="lime" />
-            ) : (
-              <BreakdownBarList
-                segments={topHoldings}
-                formatter={(value) => formatCompactCurrency(value)}
-              />
-            )}
-          </article>
-
-          <div className="showcase-side">
-            <article className="surface-card">
-              <div className="surface-heading compact">
-                <span className="section-kicker">Portfolio mix</span>
-                <h3>{detail.portfolio.length} rows</h3>
-              </div>
-              <RingChart segments={portfolioExposure} centerLabel="positions" />
-            </article>
-
-            <article className="surface-card">
-              <div className="surface-heading compact">
-                <span className="section-kicker">
-                  {hasTradeHistory ? 'Trade mix' : 'Asset classes'}
-                </span>
-                <h3>{hasTradeHistory ? detail.trades.length : detail.portfolio.length}</h3>
-              </div>
-              <RingChart
-                segments={hasTradeHistory ? tradeTypes : assetTypeBreakdown}
-                centerLabel={hasTradeHistory ? 'trades' : 'classes'}
-              />
-            </article>
+            <span className="note-pill">
+              {hasTradeHistory
+                ? `Avg lag ${delayDays === null ? 'n/a' : `${delayDays}d`}`
+                : `${detail.portfolio.length} disclosed rows`}
+            </span>
           </div>
-        </section>
+          {hasTradeHistory ? (
+            <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="lime" />
+          ) : (
+            <CompactList segments={topHoldings} formatter={(value) => formatCompactCurrency(value)} />
+          )}
+        </article>
 
         <article className="surface-card">
           <div className="surface-heading">
@@ -906,7 +798,6 @@ function TickerDetailView({
   const tradeSeries = buildMonthlyTradeSeries(detail.trades)
   const securitySeries = buildMarketSeries(detail.market.security, 14)
   const benchmarkSeries = buildMarketSeries(detail.market.benchmark, 14)
-  const partyBreakdown = buildPartyBreakdown(detail.trades)
   const tradeTypes = buildTradeTypeBreakdown(detail.trades)
   const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
   const averageLag = averageFilingDelayDays(detail.trades)
@@ -962,9 +853,13 @@ function TickerDetailView({
           </div>
         </SurfaceCard>
 
-        <SurfaceCard kicker="Party split" title="Who is trading it">
-          <RingChart segments={partyBreakdown} centerLabel="filers" />
-        </SurfaceCard>
+        <article className="surface-card rail-compact">
+          <div className="surface-heading compact">
+            <span className="section-kicker">Action mix</span>
+            <h3>{detail.trades.length}</h3>
+          </div>
+          <CompactList segments={tradeTypes} formatter={(value) => formatInteger(value)} />
+        </article>
       </aside>
 
       <div className="detail-stage">
@@ -997,65 +892,57 @@ function TickerDetailView({
           />
         </section>
 
-        <section className="showcase-grid">
-          <article className="surface-card showcase-primary">
-            <div className="surface-heading">
-              <div>
-                <span className="section-kicker">Market performance</span>
-                <h2>{detail.summary.ticker} vs S&amp;P 500 proxy</h2>
-              </div>
-              <span className="note-pill">
-                {detail.market.security?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
-              </span>
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
+              <span className="section-kicker">Market performance</span>
+              <h2>{detail.summary.ticker} vs S&amp;P 500 proxy</h2>
             </div>
-            <p className="muted-copy">
-              {hasTickerBenchmark
-                ? 'The price lane is real market data. The trade ledger below remains disclosure-derived, so you can compare what the security did against when officials reported touching it.'
-                : 'Once market data is configured, this lane will compare normalized issuer performance against SPY while keeping the disclosure ledger below unchanged.'}
-            </p>
-            <TrendChart
-              points={securitySeries ?? tradeSeries}
-              label={securitySeries === null ? 'Estimated disclosed volume' : detail.summary.ticker}
-              tone="coral"
-              comparisonPoints={hasTickerBenchmark ? benchmarkSeries : null}
-              comparisonLabel={hasTickerBenchmark ? detail.market.benchmark?.label : undefined}
-              comparisonTone="muted"
-            />
-          </article>
-
-          <div className="showcase-side">
-            <article className="surface-card">
-              <div className="surface-heading compact">
-                <span className="section-kicker">Action mix</span>
-                <h3>{detail.trades.length} rows</h3>
-              </div>
-              <RingChart segments={tradeTypes} centerLabel="actions" />
-            </article>
-
-            <article className="surface-card">
-              <div className="surface-heading compact">
-                <span className="section-kicker">Disclosure flow</span>
-                <h3>{formatCompactCurrency(estimatedVolume)}</h3>
-              </div>
-              <p className="muted-copy">
-                Parsed trade rows span {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
-                {formatDate(detail.summary.latestTransactionDate) ?? 'n/a'} across{' '}
-                {formatInteger(detail.summary.tradingOfficialCount)} officials.
-              </p>
-            </article>
+            <span className="note-pill">
+              {detail.market.security?.source ?? 'Set ALPHA_VANTAGE_API_KEY'}
+            </span>
           </div>
-        </section>
+          <p className="muted-copy">
+            {hasTickerBenchmark
+              ? 'The price lane is real market data. The ledger below stays disclosure-derived.'
+              : 'Once market data is configured, this lane will compare normalized issuer performance against SPY.'}
+          </p>
+          <TrendChart
+            points={securitySeries ?? tradeSeries}
+            label={securitySeries === null ? 'Estimated disclosed volume' : detail.summary.ticker}
+            tone="coral"
+            comparisonPoints={hasTickerBenchmark ? benchmarkSeries : null}
+            comparisonLabel={hasTickerBenchmark ? detail.market.benchmark?.label : undefined}
+            comparisonTone="muted"
+          />
+        </article>
 
         <article className="surface-card">
           <div className="surface-heading">
             <div>
-              <span className="section-kicker">Latest holders</span>
-              <h2>Who still appears exposed</h2>
+              <span className="section-kicker">Disclosure flow</span>
+              <h2>{formatCompactCurrency(estimatedVolume)}</h2>
             </div>
-            <span className="note-pill">{detail.holders.length} holders</span>
+            <span className="note-pill">{formatInteger(detail.summary.tradingOfficialCount)} officials</span>
           </div>
-          <HolderTable holders={detail.holders} onOfficialSelect={onOfficialSelect} />
+          <p className="muted-copy">
+            Parsed trade rows span {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
+            {formatDate(detail.summary.latestTransactionDate) ?? 'n/a'}.
+          </p>
         </article>
+
+        {detail.holders.length > 0 ? (
+          <article className="surface-card">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">Latest holders</span>
+                <h2>Who still appears exposed</h2>
+              </div>
+              <span className="note-pill">{detail.holders.length} holders</span>
+            </div>
+            <HolderTable holders={detail.holders} onOfficialSelect={onOfficialSelect} />
+          </article>
+        ) : null}
 
         <article className="surface-card">
           <div className="surface-heading">
@@ -1141,29 +1028,20 @@ function LedgerItem({ label, value, detail }: LedgerItemProps) {
   )
 }
 
-interface BreakdownBarListProps {
+interface CompactListProps {
   segments: Array<{ label: string; value: number }>
   formatter: (value: number) => string
 }
 
-function BreakdownBarList({ segments, formatter }: BreakdownBarListProps) {
+function CompactList({ segments, formatter }: CompactListProps) {
   const values = segments.length > 0 ? segments : [{ label: 'No data', value: 0 }]
-  const maxValue = Math.max(...values.map((segment) => segment.value), 1)
 
   return (
-    <ul className="bar-list">
+    <ul className="compact-list">
       {values.map((segment) => (
-        <li key={segment.label} className="bar-list-row">
-          <div className="bar-list-copy">
-            <strong>{segment.label}</strong>
-            <span>{formatter(segment.value)}</span>
-          </div>
-          <div className="bar-track" aria-hidden="true">
-            <span
-              className="bar-fill"
-              style={{ width: `${Math.max((segment.value / maxValue) * 100, 4)}%` }}
-            />
-          </div>
+        <li key={segment.label} className="compact-list-row">
+          <strong>{segment.label}</strong>
+          <span>{formatter(segment.value)}</span>
         </li>
       ))}
     </ul>
