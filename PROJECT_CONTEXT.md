@@ -191,9 +191,10 @@ Current House ingestion behavior:
   - compact detail-page mastheads so official and ticker desks start closer to the actual data surface
   - a newer minimal pass that removes secondary panels, ring-chart clutter, and redundant toolbar chrome in favor of one primary chart, one supporting rail, and one main table per view
   - a live S&P 500 proxy lane when `ALPHA_VANTAGE_API_KEY` is configured, with graceful fallback copy when local market data is disabled
-  - official profile photos wired through the data model, API, and frontend with circular avatars, load-in animation, and fallback initials
-  - ticker/company marks shown in homepage trade tables alongside ticker pills
-  - table rows that render official names now support avatar rendering across homepage and ticker-detail surfaces when `photo_url` is available
+- official profile photos wired through the data model, API, and frontend with circular avatars, load-in animation, and fallback initials
+- ticker/company marks shown in homepage trade tables alongside ticker pills
+- table rows that render official names now support avatar rendering across homepage and ticker-detail surfaces when `photo_url` is available
+- official profile headshots now render immediately when a real `photo_url` exists, with a deliberate monogram fallback for unmatched officials
 
 Validated local state as of 2026-03-21:
 
@@ -233,6 +234,14 @@ Validated local state as of 2026-03-21:
   - `/api/v1/search?q=msft` returns `MSFT` as the top ticker match
   - `/api/v1/officials/171` currently returns `Matthew Sin` with `40` active positions
 - `/api/v1/tickers/MSFT` currently returns `20` parsed trades with latest activity on `2026-03-11`
+
+## Known gaps and next work
+
+- Official headshots are only available for current/known members matched via Bioguide; candidates and other filers often have no official government headshot. A separate photo source strategy is needed if you want complete coverage (for example: campaign sites, FEC data, or a curated mapping).
+- Watchlist/top-officials currently surface candidates because the House filings include candidate reports; consider a “current members only” toggle or separate candidate lane on the overview.
+- Senate ingestion is not started yet.
+- Filing detail/source pages are not implemented yet.
+- Filters on ticker and official pages (chamber, party, owner type, filing date) are not implemented yet.
 - official photo backfill support exists via `officials.photo_url` plus `uv run ingest official-photos`, and the latest local backfill populated a partial set of real photos while leaving fallback initials in place for unmatched officials
 
 ## Current limits
@@ -256,12 +265,16 @@ Current House ingest now parses a first-pass holdings snapshot from latest candi
 The current frontend surface is now good enough to browse real local data end to end:
 
 - the landing page acts as a dashboard with tracked-volume metrics, disclosure activity charts, ticker flow, portfolio leaders, and recent trade tables
+- the homepage search results now render directly below the search form instead of as a detached page section
+- the homepage watchlist and most-traded rails currently show 12 minimal rows each, with quieter hover/active states and no extra count chrome
 - overview cards lead into official and ticker detail views
 - search results can deep-link into those same detail views
 - URLs can be shared with `?official={id}` or `?ticker={symbol}`
 - official detail views now include profile metrics, holdings tables, trade tables, and visual portfolio/trade breakdowns
+- official and ticker trade tables now collapse duplicate visible trade rows in the UI and sum the displayed amount ranges
 - official detail views now lean into a left-rail profile layout with denser concentration and mix surfaces plus a compressed desk header
 - ticker detail views now include issuer metrics, latest holders, trade ledgers, party/action visual breakdowns, and the same compact desk framing
+- ticker detail trade and holder rows now receive official `photo_url` values from the read API, so ticker-side avatar rendering can stay consistent with official views
 - the current visual system is flatter and denser than before, using thin separators, compact stat strips, and restrained monochrome typography instead of boxed dashboard panels
 - the latest frontend pass reduces visible UI chrome further by collapsing redundant sections and keeping each page closer to a dossier or briefing page than a dashboard wall
 - detail views are still intentionally read-only
@@ -352,6 +365,8 @@ Recent commits already on `master`:
 - `c6986d9` web: redesign dashboard and profile surfaces
 - `3bbc611` web: adopt Tailwind CSS v4
 - `0928077` docs: record Tailwind frontend stack
+- `ddcac52` Refine homepage lists and trade dedupe
+- `6186bc2` api: add ticker detail photo urls
 
 ## Next recommended steps
 
@@ -361,6 +376,7 @@ Immediate next work:
 2. Backfill richer asset typing and issuer normalization beyond the first-pass House canonicalization.
 3. Improve OCR/table extraction if future scanned House holdings disclosures appear.
 4. Add Senate ingestion after House parsing is stable.
+5. Improve official photo coverage and decide whether issuer logos should be mirrored locally instead of resolved through third-party URLs plus fallbacks.
 
 After that:
 
