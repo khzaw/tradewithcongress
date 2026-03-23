@@ -102,6 +102,8 @@ What they do:
 - `make test-ingest`: runs the Python ingest test suite
 - `make db-down`: stops local Postgres
 
+Repo shell wrappers source the root `.env` before starting `api/`, `web/`, or `ingest/`, so local secrets stay in one place and do not need to be duplicated inside each subproject.
+
 ## Environment
 
 Current relevant environment variables:
