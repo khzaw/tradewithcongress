@@ -114,12 +114,27 @@ export function buildTradeTypeBreakdown(
   const counts = new Map<string, number>()
 
   for (const trade of trades) {
-    counts.set(trade.transactionType, (counts.get(trade.transactionType) ?? 0) + 1)
+    const label = normalizeTradeActionLabel(trade.transactionType)
+    counts.set(label, (counts.get(label) ?? 0) + 1)
   }
 
   return [...counts.entries()]
     .map(([label, value]) => ({ label, value }))
     .sort((left, right) => right.value - left.value)
+}
+
+export function normalizeTradeActionLabel(value: string): string {
+  const normalized = value.trim().toLowerCase().replaceAll('_', ' ')
+
+  if (normalized.includes('buy') || normalized.includes('purchase')) {
+    return 'buy'
+  }
+
+  if (normalized.includes('sell') || normalized.includes('sale')) {
+    return 'sell'
+  }
+
+  return normalized
 }
 
 export function buildPartyBreakdown(

@@ -141,8 +141,8 @@ describe('insights helpers', () => {
 
   test('computes type and delay aggregates', () => {
     expect(buildTradeTypeBreakdown(EXAMPLE_TRADES)).toEqual([
-      { label: 'purchase', value: 1 },
-      { label: 'sale', value: 1 },
+      { label: 'buy', value: 1 },
+      { label: 'sell', value: 1 },
     ])
     expect(averageFilingDelayDays(EXAMPLE_TRADES)).toBe(18)
   })

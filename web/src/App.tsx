@@ -24,6 +24,7 @@ import {
   buildPortfolioExposure,
   buildTradeTypeBreakdown,
   latestActivityLabel,
+  normalizeTradeActionLabel,
   relativeMarketReturn,
   relativeMarketSpread,
   relativeOverviewReturn,
@@ -1392,7 +1393,7 @@ function formatDate(value: string | null): string | null {
 }
 
 function formatTradeAction(value: string): string {
-  return value.replaceAll('_', ' ')
+  return normalizeTradeActionLabel(value)
 }
 
 function formatAssetLabel(value: string, ticker: string | null): string {
@@ -1406,11 +1407,11 @@ function formatAssetLabel(value: string, ticker: string | null): string {
 }
 
 function normalizeActionTone(value: string): 'buy' | 'sell' | 'neutral' {
-  const normalized = value.toLowerCase()
-  if (normalized.includes('buy') || normalized.includes('purchase')) {
+  const normalized = normalizeTradeActionLabel(value)
+  if (normalized === 'buy') {
     return 'buy'
   }
-  if (normalized.includes('sell') || normalized.includes('sale')) {
+  if (normalized === 'sell') {
     return 'sell'
   }
   return 'neutral'
