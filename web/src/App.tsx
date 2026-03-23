@@ -964,7 +964,7 @@ interface SurfaceCardProps {
 interface AvatarImageProps {
   name: string
   photoUrl?: string | null
-  size: 'sm' | 'lg'
+  size: 'xxs' | 'sm' | 'lg'
   ariaLabel?: string
 }
 
@@ -981,7 +981,11 @@ function AvatarImage({ name, photoUrl = null, size, ariaLabel }: AvatarImageProp
   return (
     <img
       className={[
-        size === 'lg' ? 'profile-avatar profile-avatar-image' : 'leader-avatar',
+        size === 'lg'
+          ? 'profile-avatar profile-avatar-image'
+          : size === 'sm'
+            ? 'leader-avatar'
+            : 'table-avatar-small',
         isLoaded ? 'avatar-ready' : 'avatar-loading',
       ].join(' ')}
       src={resolvedPhotoUrl ?? fallbackSrc}
@@ -1325,10 +1329,15 @@ function RecentTradeTable({
             <td>{formatDate(trade.filingDate) ?? 'n/a'}</td>
             <td>
               <button
-                className="table-link"
+                className="table-link table-link-with-avatar"
                 type="button"
                 onClick={() => onOfficialSelect(trade.officialId)}
               >
+                <AvatarImage
+                  name={trade.officialDisplayName}
+                  photoUrl={trade.photoUrl}
+                  size="xxs"
+                />
                 {trade.officialDisplayName}
               </button>
             </td>

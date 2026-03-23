@@ -61,6 +61,7 @@ export interface OfficialTradeActivity {
   transactionId: string
   officialId: string
   officialDisplayName: string
+  photoUrl: string | null
   chamber: string
   stateCode: string | null
   districtCode: string | null
@@ -257,6 +258,7 @@ interface OfficialTradeActivityRow {
   transaction_id: NumericLike
   official_id: NumericLike
   official_display_name: string
+  photo_url: string | null
   chamber: string
   state_code: string | null
   district_code: string | null
@@ -841,6 +843,7 @@ function mapOfficialTradeActivity(
     transactionId: toIdentifier(row.transaction_id),
     officialId: toIdentifier(row.official_id),
     officialDisplayName: row.official_display_name,
+    photoUrl: row.photo_url,
     chamber: row.chamber,
     stateCode: row.state_code,
     districtCode: row.district_code,

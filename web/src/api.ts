@@ -65,6 +65,7 @@ export interface OfficialTradeActivity {
   transactionId: string
   officialId: string
   officialDisplayName: string
+  photoUrl: string | null
   chamber: string
   stateCode: string | null
   districtCode: string | null

@@ -90,6 +90,7 @@ describe('versioned read api', () => {
     expect(tradesResponse.status).toBe(200)
     expect(tradesBody.data).toHaveLength(3)
     expect(tradesBody.data[0].filingDate).toBe('2026-03-16')
+    expect(tradesBody.data[0].photoUrl).toBe('https://unitedstates.github.io/images/congress/225x275/P000197.jpg')
     expect(tradesBody.data[1].filingDate).toBe('2026-02-21')
   })
 
@@ -107,6 +108,7 @@ describe('versioned read api', () => {
     expect(body.data.activeHolders).toBe(3)
     expect(body.data.recentTrades).toHaveLength(4)
     expect(body.data.recentTrades[0].filingDate).toBe('2026-03-16')
+    expect(body.data.recentTrades[0].photoUrl).toBe('https://unitedstates.github.io/images/congress/225x275/P000197.jpg')
     expect(body.data.monthlyActivity.length).toBeGreaterThan(0)
     expect(body.data.benchmark.symbol).toBe('SPY')
     expect(body.data.benchmark.points).toHaveLength(3)

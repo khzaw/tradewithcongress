@@ -578,6 +578,7 @@
 
   .leader-avatar,
   .asset-mark,
+  .table-avatar-small,
   .profile-avatar-image {
     display: block;
     flex: none;
@@ -585,6 +586,7 @@
   }
 
   .leader-avatar,
+  .table-avatar-small,
   .profile-avatar-image {
     transition:
       opacity 220ms ease,
@@ -610,6 +612,14 @@
     height: 34px;
     border-radius: 999px;
     border: 1px solid rgba(142, 184, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .table-avatar-small {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(142, 184, 255, 0.14);
     background: rgba(255, 255, 255, 0.02);
   }
 
@@ -1161,6 +1171,12 @@
     color: var(--text-strong);
     text-align: left;
     cursor: pointer;
+  }
+
+  .table-link-with-avatar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .table-link:hover {
