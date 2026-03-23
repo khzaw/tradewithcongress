@@ -998,7 +998,7 @@ function AvatarImage({ name, photoUrl = null, size, ariaLabel }: AvatarImageProp
           : size === 'sm'
             ? 'leader-avatar'
             : 'table-avatar-small',
-        isLoaded ? 'avatar-ready' : 'avatar-loading',
+        size === 'lg' || isLoaded ? 'avatar-ready' : 'avatar-loading',
       ].join(' ')}
       src={resolvedPhotoUrl ?? fallbackSrc}
       alt={ariaLabel ?? ''}
