@@ -1001,9 +1001,10 @@ interface AssetMarkProps {
   ticker: string
   issuerName?: string | null
   assetName: string
+  size?: 'sm' | 'md'
 }
 
-function AssetMark({ ticker, issuerName = null, assetName }: AssetMarkProps) {
+function AssetMark({ ticker, issuerName = null, assetName, size = 'md' }: AssetMarkProps) {
   const fallbackSrc = buildAssetMarkDataUrl(ticker, assetName)
   const logoUrl = resolveIssuerLogoUrl({ ticker, issuerName, assetName })
   const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null)
@@ -1015,6 +1016,11 @@ function AssetMark({ ticker, issuerName = null, assetName }: AssetMarkProps) {
       src={resolvedLogoUrl ?? fallbackSrc}
       alt=""
       aria-hidden="true"
+      style={
+        size === 'sm'
+          ? { width: '18px', height: '18px', padding: '3px' }
+          : undefined
+      }
       onError={resolvedLogoUrl === null ? undefined : () => setFailedLogoUrl(resolvedLogoUrl)}
     />
   )
@@ -1344,11 +1350,19 @@ function RecentTradeTable({
             <td className="table-col-ticker">
               {trade.ticker !== null ? (
                 <button
-                  className="ticker-pill"
+                  className="table-link table-link-with-avatar"
                   type="button"
                   onClick={() => onTickerSelect(trade.ticker!)}
                 >
-                  {trade.ticker}
+                  <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <AssetMark
+                      ticker={trade.ticker}
+                      issuerName={trade.issuerName}
+                      assetName={trade.assetName}
+                      size="sm"
+                    />
+                  </span>
+                  <span className="ticker-pill">{trade.ticker}</span>
                 </button>
               ) : (
                 <span className="ticker-pill muted">{trade.assetType}</span>
