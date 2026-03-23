@@ -559,11 +559,23 @@
     gap: 12px;
   }
 
+  .ticker-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+  }
+
   .leader-identity > span {
     min-width: 0;
   }
 
+  .ticker-identity > span {
+    min-width: 0;
+  }
+
   .leader-avatar,
+  .asset-mark,
   .profile-avatar-image {
     display: block;
     flex: none;
@@ -576,6 +588,14 @@
     border-radius: 12px;
     border: 1px solid rgba(142, 184, 255, 0.1);
     background: rgba(255, 255, 255, 0.02);
+  }
+
+  .asset-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
   }
 
   .leader-button small,

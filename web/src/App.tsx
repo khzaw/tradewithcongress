@@ -488,9 +488,15 @@ function OverviewView({
                   type="button"
                   onClick={() => onTickerSelect(ticker.ticker)}
                 >
-                  <span>
-                    <strong>{ticker.ticker}</strong>
-                    <small>{ticker.representativeAssetName}</small>
+                  <span className="ticker-identity">
+                    <AssetMark
+                      ticker={ticker.ticker}
+                      assetName={ticker.representativeAssetName}
+                    />
+                    <span>
+                      <strong>{ticker.ticker}</strong>
+                      <small>{ticker.representativeAssetName}</small>
+                    </span>
                   </span>
                   <span className="metric-inline">{ticker.transactionCount}</span>
                 </button>
@@ -956,6 +962,22 @@ function AvatarImage({ name, size, ariaLabel }: AvatarImageProps) {
       src={buildAvatarDataUrl(name)}
       alt={ariaLabel ?? ''}
       aria-hidden={ariaLabel === undefined}
+    />
+  )
+}
+
+interface AssetMarkProps {
+  ticker: string
+  assetName: string
+}
+
+function AssetMark({ ticker, assetName }: AssetMarkProps) {
+  return (
+    <img
+      className="asset-mark"
+      src={buildAssetMarkDataUrl(ticker, assetName)}
+      alt=""
+      aria-hidden="true"
     />
   )
 }
@@ -1684,6 +1706,33 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
+}
+
+function buildAssetMarkDataUrl(ticker: string, assetName: string): string {
+  const seed = `${ticker}:${assetName}`
+  const hue = hashString(seed) % 360
+  const accentHue = (hue + 26) % 360
+  const glyph = ticker.slice(0, Math.min(3, ticker.length)).toUpperCase()
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" role="img" aria-label="${escapeHtml(assetName)}">
+      <defs>
+        <linearGradient id="assetBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="hsl(${hue} 30% 16%)" />
+          <stop offset="100%" stop-color="hsl(${accentHue} 28% 10%)" />
+        </linearGradient>
+        <radialGradient id="assetGlow" cx="22%" cy="20%" r="76%">
+          <stop offset="0%" stop-color="hsla(${accentHue} 90% 72% / 0.22)" />
+          <stop offset="100%" stop-color="hsla(${accentHue} 90% 72% / 0)" />
+        </radialGradient>
+      </defs>
+      <rect width="72" height="72" rx="18" fill="url(#assetBg)" />
+      <rect width="72" height="72" rx="18" fill="url(#assetGlow)" />
+      <rect x="1" y="1" width="70" height="70" rx="17" fill="none" stroke="rgba(255,255,255,0.1)" />
+      <text x="36" y="42" fill="rgba(244,248,251,0.96)" font-family="IBM Plex Mono, monospace" font-size="19" letter-spacing="1.5" text-anchor="middle">${escapeHtml(glyph)}</text>
+    </svg>
+  `.trim()
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
 }
 
 export default App
