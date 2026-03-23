@@ -11,6 +11,7 @@ from .db import connect
 from .house_assets import run_house_asset_sync
 from .house_holdings import run_house_holdings_sync
 from .house import fetch_house_archive, parse_house_archive_zip, sync_house_metadata
+from .official_photos import fetch_legislator_photo_records, sync_official_photos
 from .house_transactions import run_house_transaction_sync
 
 
@@ -77,6 +78,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--reparse",
         action="store_true",
         help="Reprocess latest holdings documents even if already parsed",
+    )
+
+    subcommands.add_parser(
+        "official-photos",
+        help="Backfill official bioguide IDs and profile photo URLs",
     )
 
     return parser
@@ -166,6 +172,20 @@ def run_house_holdings(
     )
 
 
+def run_official_photos(settings: Settings) -> None:
+    with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+        legislators = fetch_legislator_photo_records(client)
+        with connect(settings) as conn:
+            summary = sync_official_photos(conn, legislators)
+
+    logger.info(
+        "official_photos_synced",
+        officials_scanned=summary.officials_scanned,
+        officials_matched=summary.officials_matched,
+        officials_updated=summary.officials_updated,
+    )
+
+
 def main() -> None:
     structlog.configure()
     parser = build_parser()
@@ -190,6 +210,10 @@ def main() -> None:
 
     if args.command == "house-holdings":
         run_house_holdings(settings, year=args.year, reparse=args.reparse)
+        return
+
+    if args.command == "official-photos":
+        run_official_photos(settings)
         return
 
     raise SystemExit(f"Unsupported command: {args.command}")

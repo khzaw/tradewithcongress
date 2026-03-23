@@ -11,6 +11,7 @@ uv run ingest house-metadata --year 2026
 uv run ingest house-transactions --year 2026
 uv run ingest house-assets --year 2026
 uv run ingest house-holdings --year 2026
+uv run ingest official-photos
 uv run pytest
 ```
 
