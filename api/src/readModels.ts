@@ -108,6 +108,7 @@ export interface TickerTradeActivity {
   transactionId: string
   officialId: string
   officialDisplayName: string
+  photoUrl: string | null
   chamber: string
   stateCode: string | null
   districtCode: string | null
@@ -134,6 +135,7 @@ export interface TickerHolder {
   positionId: string
   officialId: string
   officialDisplayName: string
+  photoUrl: string | null
   chamber: string
   stateCode: string | null
   districtCode: string | null
@@ -305,6 +307,7 @@ interface TickerTradeActivityRow {
   transaction_id: NumericLike
   official_id: NumericLike
   official_display_name: string
+  photo_url: string | null
   chamber: string
   state_code: string | null
   district_code: string | null
@@ -331,6 +334,7 @@ interface TickerHolderRow {
   position_id: NumericLike
   official_id: NumericLike
   official_display_name: string
+  photo_url: string | null
   chamber: string
   state_code: string | null
   district_code: string | null
@@ -894,6 +898,7 @@ function mapTickerTradeActivity(row: TickerTradeActivityRow): TickerTradeActivit
     transactionId: toIdentifier(row.transaction_id),
     officialId: toIdentifier(row.official_id),
     officialDisplayName: row.official_display_name,
+    photoUrl: row.photo_url,
     chamber: row.chamber,
     stateCode: row.state_code,
     districtCode: row.district_code,
@@ -922,6 +927,7 @@ function mapTickerHolder(row: TickerHolderRow): TickerHolder {
     positionId: toIdentifier(row.position_id),
     officialId: toIdentifier(row.official_id),
     officialDisplayName: row.official_display_name,
+    photoUrl: row.photo_url,
     chamber: row.chamber,
     stateCode: row.state_code,
     districtCode: row.district_code,
