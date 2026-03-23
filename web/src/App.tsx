@@ -972,13 +972,22 @@ function AvatarImage({ name, photoUrl = null, size, ariaLabel }: AvatarImageProp
   const fallbackSrc = buildAvatarDataUrl(name)
   const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null)
   const resolvedPhotoUrl = photoUrl !== null && photoUrl !== failedPhotoUrl ? photoUrl : null
+  const [isLoaded, setIsLoaded] = useState(resolvedPhotoUrl === null)
+
+  useEffect(() => {
+    setIsLoaded(resolvedPhotoUrl === null)
+  }, [resolvedPhotoUrl])
 
   return (
     <img
-      className={size === 'lg' ? 'profile-avatar profile-avatar-image' : 'leader-avatar'}
+      className={[
+        size === 'lg' ? 'profile-avatar profile-avatar-image' : 'leader-avatar',
+        isLoaded ? 'avatar-ready' : 'avatar-loading',
+      ].join(' ')}
       src={resolvedPhotoUrl ?? fallbackSrc}
       alt={ariaLabel ?? ''}
       aria-hidden={ariaLabel === undefined}
+      onLoad={() => setIsLoaded(true)}
       onError={resolvedPhotoUrl === null ? undefined : () => setFailedPhotoUrl(resolvedPhotoUrl)}
     />
   )

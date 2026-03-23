@@ -582,6 +582,27 @@
     object-fit: cover;
   }
 
+  .leader-avatar,
+  .profile-avatar-image {
+    transition:
+      opacity 220ms ease,
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 280ms ease;
+    will-change: opacity, transform, filter;
+  }
+
+  .avatar-loading {
+    opacity: 0;
+    transform: scale(0.965);
+    filter: blur(8px);
+  }
+
+  .avatar-ready {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+
   .leader-avatar {
     width: 34px;
     height: 34px;
