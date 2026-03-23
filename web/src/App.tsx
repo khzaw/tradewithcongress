@@ -459,11 +459,14 @@ function OverviewView({
                   type="button"
                   onClick={() => onOfficialSelect(official.officialId)}
                 >
-                  <span>
-                    <strong>{official.displayName}</strong>
-                    <small>
-                      {official.chamber} · {official.stateCode ?? 'n/a'}
-                    </small>
+                  <span className="leader-identity">
+                    <AvatarImage name={official.displayName} size="sm" />
+                    <span>
+                      <strong>{official.displayName}</strong>
+                      <small>
+                        {official.chamber} · {official.stateCode ?? 'n/a'}
+                      </small>
+                    </span>
                   </span>
                   <span className="metric-inline">{official.positionCount}</span>
                 </button>
@@ -646,7 +649,6 @@ function OfficialDetailView({
     detail.summary.latestTransactionDate ??
     detail.summary.latestPositionFilingDate ??
     detail.summary.latestFilingDate
-  const profileInitials = buildInitials(detail.summary.displayName)
 
   return (
     <section className="detail-layout detail-layout-official">
@@ -655,9 +657,7 @@ function OfficialDetailView({
           <button className="text-button" type="button" onClick={onBack}>
             Back to overview
           </button>
-          <div className="profile-avatar" aria-hidden="true">
-            <span>{profileInitials}</span>
-          </div>
+          <AvatarImage name={detail.summary.displayName} size="lg" ariaLabel={`${detail.summary.displayName} avatar`} />
           <span className="section-kicker">Selected member</span>
           <h1 className="profile-name">{detail.summary.displayName}</h1>
           <p className="profile-meta">{formatOfficialMeta(detail.summary)}</p>
@@ -941,6 +941,23 @@ interface SurfaceCardProps {
   title: string
   description?: string
   children?: React.ReactNode
+}
+
+interface AvatarImageProps {
+  name: string
+  size: 'sm' | 'lg'
+  ariaLabel?: string
+}
+
+function AvatarImage({ name, size, ariaLabel }: AvatarImageProps) {
+  return (
+    <img
+      className={size === 'lg' ? 'profile-avatar profile-avatar-image' : 'leader-avatar'}
+      src={buildAvatarDataUrl(name)}
+      alt={ariaLabel ?? ''}
+      aria-hidden={ariaLabel === undefined}
+    />
+  )
 }
 
 interface DetailSkeletonProps {
@@ -1622,6 +1639,51 @@ function isAbortError(error: unknown): boolean {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function buildAvatarDataUrl(name: string): string {
+  const initials = buildInitials(name)
+  const hue = hashString(name) % 360
+  const accentHue = (hue + 48) % 360
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="${escapeHtml(name)}">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="hsl(${hue} 42% 18%)" />
+          <stop offset="100%" stop-color="hsl(${accentHue} 36% 10%)" />
+        </linearGradient>
+        <radialGradient id="glow" cx="24%" cy="22%" r="72%">
+          <stop offset="0%" stop-color="hsla(${accentHue} 88% 72% / 0.34)" />
+          <stop offset="100%" stop-color="hsla(${accentHue} 88% 72% / 0)" />
+        </radialGradient>
+      </defs>
+      <rect width="160" height="160" rx="34" fill="url(#bg)" />
+      <rect width="160" height="160" rx="34" fill="url(#glow)" />
+      <rect x="1.5" y="1.5" width="157" height="157" rx="32.5" fill="none" stroke="rgba(255,255,255,0.12)" />
+      <text x="80" y="92" fill="rgba(244,248,251,0.96)" font-family="IBM Plex Mono, monospace" font-size="42" letter-spacing="5" text-anchor="middle">${escapeHtml(initials)}</text>
+    </svg>
+  `.trim()
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+function hashString(value: string): number {
+  let hash = 0
+
+  for (const character of value) {
+    hash = ((hash << 5) - hash + character.charCodeAt(0)) | 0
+  }
+
+  return Math.abs(hash)
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 }
 
 export default App

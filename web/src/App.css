@@ -505,7 +505,7 @@
   .command-list-button {
     width: 100%;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 14px;
     padding: 9px 0;
@@ -550,6 +550,32 @@
     font-size: 0.95rem;
     font-weight: 500;
     letter-spacing: -0.025em;
+  }
+
+  .leader-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .leader-identity > span {
+    min-width: 0;
+  }
+
+  .leader-avatar,
+  .profile-avatar-image {
+    display: block;
+    flex: none;
+    object-fit: cover;
+  }
+
+  .leader-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(142, 184, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .leader-button small,
@@ -603,6 +629,14 @@
     font-family: var(--font-mono);
     font-size: 1.08rem;
     letter-spacing: 0.08em;
+  }
+
+  .profile-avatar-image {
+    width: 92px;
+    height: 92px;
+    border-radius: 22px;
+    border: 1px solid rgba(142, 184, 255, 0.12);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .profile-name {
