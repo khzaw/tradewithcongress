@@ -230,10 +230,10 @@ function App() {
               <>
                 <span className="section-kicker">Congressional trading desk</span>
                 <h1 className="intro-headline">
-                  Track portfolios, trade flow, and filing lag from public congressional disclosures.
+                  Track congressional portfolios.
                 </h1>
                 <p className="brand-copy">
-                  Search members or tickers, inspect latest disclosed holdings, benchmark activity against the market, and keep every claim tied to the source filing.
+                  Follow senators, representatives, and candidates through disclosed trades, holding snapshots, filing lag, and market context tied back to the source filing.
                 </p>
               </>
             ) : (
