@@ -449,7 +449,6 @@ function OverviewView({
         <article className="surface-card rail-compact">
           <div className="surface-heading compact">
             <span className="section-kicker">Watchlist</span>
-            <h3>{dashboardState.topOfficials.length}</h3>
           </div>
           <ul className="leader-list">
             {dashboardState.topOfficials.map((official) => (
@@ -478,7 +477,6 @@ function OverviewView({
         <article className="surface-card rail-compact">
           <div className="surface-heading compact">
             <span className="section-kicker">Most traded</span>
-            <h3>{dashboardState.topTickers.length}</h3>
           </div>
           <ul className="ticker-list">
             {dashboardState.topTickers.map((ticker) => (
