@@ -20,6 +20,28 @@ export interface BreakdownSegment {
 
 type TradeLike = OfficialTradeActivity | TickerTradeActivity
 
+export function mergeTradeActivity<T extends TradeLike>(trades: T[]): T[] {
+  const mergedTrades = new Map<string, T>()
+
+  for (const trade of trades) {
+    const mergeKey = buildTradeMergeKey(trade)
+    const existingTrade = mergedTrades.get(mergeKey)
+
+    if (existingTrade === undefined) {
+      mergedTrades.set(mergeKey, { ...trade })
+      continue
+    }
+
+    existingTrade.amountMin = sumNullableAmounts(existingTrade.amountMin, trade.amountMin)
+    existingTrade.amountMax = sumNullableAmounts(existingTrade.amountMax, trade.amountMax)
+    existingTrade.amountRangeLabel =
+      formatAmountRangeLabel(existingTrade.amountMin, existingTrade.amountMax) ??
+      existingTrade.amountRangeLabel
+  }
+
+  return [...mergedTrades.values()]
+}
+
 export function totalEstimatedTradeVolume(trades: TradeLike[]): number {
   return trades.reduce((total, trade) => total + midpoint(trade.amountMin, trade.amountMax), 0)
 }
@@ -255,6 +277,60 @@ function midpoint(
   const floor = amountMin ?? amountMax ?? 0
   const ceiling = amountMax ?? amountMin ?? 0
   return (floor + ceiling) / 2
+}
+
+function buildTradeMergeKey(trade: TradeLike): string {
+  return [
+    trade.officialId,
+    trade.filingId,
+    trade.assetId ?? '',
+    trade.ticker ?? '',
+    trade.assetName.trim().toLowerCase(),
+    trade.ownerType.trim().toLowerCase(),
+    normalizeTradeActionLabel(trade.transactionType),
+    trade.transactionDate ?? '',
+    trade.notificationDate ?? '',
+    trade.activityDate,
+    trade.filingDate,
+  ].join('|')
+}
+
+function sumNullableAmounts(left: number | null, right: number | null): number | null {
+  if (left === null && right === null) {
+    return null
+  }
+
+  return (left ?? 0) + (right ?? 0)
+}
+
+function formatAmountRangeLabel(
+  amountMin: number | null,
+  amountMax: number | null,
+): string | null {
+  if (amountMin === null && amountMax === null) {
+    return null
+  }
+
+  if (amountMin !== null && amountMax !== null && amountMin === amountMax) {
+    return formatFullCurrency(amountMin)
+  }
+
+  const lowerBound = amountMin ?? amountMax
+  const upperBound = amountMax ?? amountMin
+
+  if (lowerBound === null || upperBound === null) {
+    return null
+  }
+
+  return `${formatFullCurrency(lowerBound)} - ${formatFullCurrency(upperBound)}`
+}
+
+function formatFullCurrency(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value)
 }
 
 function normalizeSeries(points: SeriesPoint[]): SeriesPoint[] {

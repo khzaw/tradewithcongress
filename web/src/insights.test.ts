@@ -9,9 +9,11 @@ import {
   buildOverviewBenchmarkSeries,
   buildPortfolioExposure,
   buildTradeTypeBreakdown,
+  mergeTradeActivity,
   relativeMarketReturn,
   relativeMarketSpread,
   relativeOverviewReturn,
+  totalEstimatedTradeVolume,
 } from './insights.ts'
 
 const EXAMPLE_TRADES: TickerTradeActivity[] = [
@@ -145,6 +147,27 @@ describe('insights helpers', () => {
       { label: 'sell', value: 1 },
     ])
     expect(averageFilingDelayDays(EXAMPLE_TRADES)).toBe(18)
+  })
+
+  test('merges duplicate trade rows and sums their amounts', () => {
+    const mergedTrades = mergeTradeActivity([
+      EXAMPLE_TRADES[0],
+      {
+        ...EXAMPLE_TRADES[0],
+        transactionId: '3',
+        amountRangeLabel: '$1,000 - $15,000',
+      },
+      EXAMPLE_TRADES[1],
+    ])
+
+    expect(mergedTrades).toHaveLength(2)
+    expect(mergedTrades[0]).toMatchObject({
+      transactionId: '1',
+      amountMin: 2000,
+      amountMax: 30000,
+      amountRangeLabel: '$2,000 - $30,000',
+    })
+    expect(totalEstimatedTradeVolume(mergedTrades)).toBe(91000)
   })
 
   test('derives a relative overview return from monthly activity', () => {

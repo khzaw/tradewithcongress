@@ -24,6 +24,7 @@ import {
   buildPortfolioExposure,
   buildTradeTypeBreakdown,
   latestActivityLabel,
+  mergeTradeActivity,
   normalizeTradeActionLabel,
   relativeMarketReturn,
   relativeMarketSpread,
@@ -222,7 +223,6 @@ function App() {
             <div className="brand-wordmark">tradewithcongress</div>
             <nav className="topbar-links" aria-label="Project status">
               <span className="topbar-link topbar-link-active">House live</span>
-              <span className="topbar-link">Senate next</span>
             </nav>
           </div>
 
@@ -264,6 +264,13 @@ function App() {
             <button className="command-button" type="submit">Search</button>
           </form>
 
+          <SearchResultsPanel
+            searchState={searchState}
+            searchStatus={searchStatus}
+            onOfficialSelect={(officialId) => navigateToView({ kind: 'official', officialId })}
+            onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
+          />
+
           {view.kind === 'overview' ? (
             <div className="topbar-ledger" aria-label="Coverage summary">
               <LedgerItem
@@ -293,13 +300,6 @@ function App() {
           ) : null}
         </div>
       </header>
-
-      <SearchResultsPanel
-        searchState={searchState}
-        searchStatus={searchStatus}
-        onOfficialSelect={(officialId) => navigateToView({ kind: 'official', officialId })}
-        onTickerSelect={(ticker) => navigateToView({ kind: 'ticker', ticker })}
-      />
 
       {view.kind === 'overview' && status === 'loading' ? (
         <OverviewSkeleton />
@@ -441,7 +441,7 @@ function OverviewView({
       <aside className="rail-column">
         <section className="hero-surface">
           <span className="section-kicker">Current coverage</span>
-          <h1>House disclosures are live now. Senate is next.</h1>
+          <h1>Live House disclosures, organized for search and review.</h1>
           <p className="muted-copy">
             Explore House disclosures with dates, holdings, and trade activity in one place.
           </p>
@@ -472,7 +472,7 @@ function OverviewView({
                       </small>
                     </span>
                   </span>
-                  <span className="metric-inline">{official.positionCount}</span>
+                  <span className="metric-inline">{official.transactionCount} trades</span>
                 </button>
               </li>
             ))}
@@ -502,7 +502,7 @@ function OverviewView({
                       <small>{formatRepresentativeAssetName(ticker.representativeAssetName)}</small>
                     </span>
                   </span>
-                  <span className="metric-inline">{ticker.transactionCount}</span>
+                  <span className="metric-inline">{ticker.transactionCount} trades</span>
                 </button>
               </li>
             ))}
@@ -649,11 +649,12 @@ function OfficialDetailView({
   onBack,
   onTickerSelect,
 }: OfficialDetailViewProps) {
-  const tradeSeries = buildMonthlyTradeSeries(detail.trades)
+  const visibleTrades = mergeTradeActivity(detail.trades)
+  const tradeSeries = buildMonthlyTradeSeries(visibleTrades)
   const topHoldings = buildPortfolioExposure(detail.portfolio, 6)
-  const delayDays = averageFilingDelayDays(detail.trades)
-  const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
-  const hasTradeHistory = detail.trades.length > 0
+  const delayDays = averageFilingDelayDays(visibleTrades)
+  const estimatedVolume = totalEstimatedTradeVolume(visibleTrades)
+  const hasTradeHistory = visibleTrades.length > 0
   const issuerCount = countDistinct(
     detail.portfolio.map((position) => position.issuerName ?? position.ticker ?? position.assetName),
   )
@@ -681,7 +682,7 @@ function OfficialDetailView({
 
           <div className="profile-stat-grid">
             <MetricStat label="Holdings" value={formatInteger(detail.summary.positionCount)} />
-            <MetricStat label="Trades" value={formatInteger(detail.summary.transactionCount)} />
+            <MetricStat label="Trades" value={formatInteger(visibleTrades.length)} />
             <MetricStat
               label="Est. volume"
               value={formatCompactCurrency(estimatedVolume)}
@@ -709,7 +710,7 @@ function OfficialDetailView({
         <section className="metric-grid">
           <MetricCard
             label="Trades"
-            value={formatInteger(detail.summary.transactionCount)}
+            value={formatInteger(visibleTrades.length)}
             tone="neutral"
             detail="Disclosed trades"
           />
@@ -787,11 +788,9 @@ function OfficialDetailView({
                 <span className="section-kicker">Recent trades</span>
                 <h2>Trade timeline</h2>
               </div>
-              <span className="note-pill">
-                {delayDays === null ? 'n/a' : `Avg lag ${delayDays}d`}
-              </span>
+              <span className="note-pill">{formatInteger(visibleTrades.length)} trades</span>
             </div>
-            <TradeTable trades={detail.trades} onTickerSelect={onTickerSelect} />
+            <TradeTable trades={visibleTrades} onTickerSelect={onTickerSelect} />
           </article>
         ) : (
           <SurfaceCard kicker="Recent trades" title="No recent trade activity">
@@ -816,12 +815,13 @@ function TickerDetailView({
   onBack,
   onOfficialSelect,
 }: TickerDetailViewProps) {
-  const tradeSeries = buildMonthlyTradeSeries(detail.trades)
+  const visibleTrades = mergeTradeActivity(detail.trades)
+  const tradeSeries = buildMonthlyTradeSeries(visibleTrades)
   const securitySeries = buildMarketSeries(detail.market.security, 14)
   const benchmarkSeries = buildMarketSeries(detail.market.benchmark, 14)
-  const tradeTypes = buildTradeTypeBreakdown(detail.trades)
-  const estimatedVolume = totalEstimatedTradeVolume(detail.trades)
-  const averageLag = averageFilingDelayDays(detail.trades)
+  const tradeTypes = buildTradeTypeBreakdown(visibleTrades)
+  const estimatedVolume = totalEstimatedTradeVolume(visibleTrades)
+  const averageLag = averageFilingDelayDays(visibleTrades)
   const securityReturn = relativeMarketReturn(detail.market.security)
   const benchmarkSpread = relativeMarketSpread(
     detail.market.security,
@@ -862,7 +862,7 @@ function TickerDetailView({
         <article className="surface-card rail-compact">
           <div className="surface-heading compact">
             <span className="section-kicker">Action mix</span>
-            <h3>{detail.trades.length}</h3>
+            <h3>{visibleTrades.length}</h3>
           </div>
           <CompactList segments={tradeTypes} formatter={(value) => formatInteger(value)} />
         </article>
@@ -918,7 +918,7 @@ function TickerDetailView({
             <span className="note-pill">
               {averageLag === null
                 ? `${formatInteger(detail.summary.tradingOfficialCount)} officials`
-                : `${detail.trades.length} trades`}
+                : `${visibleTrades.length} trades`}
             </span>
           </div>
           <p className="muted-copy">
@@ -945,9 +945,9 @@ function TickerDetailView({
               <span className="section-kicker">Trades</span>
               <h2>Recent trades</h2>
             </div>
-            <span className="note-pill">{formatInteger(detail.trades.length)} trades</span>
+            <span className="note-pill">{formatInteger(visibleTrades.length)} trades</span>
           </div>
-          <TickerTradeTable trades={detail.trades} onOfficialSelect={onOfficialSelect} />
+          <TickerTradeTable trades={visibleTrades} onOfficialSelect={onOfficialSelect} />
         </article>
       </div>
     </section>
@@ -1329,6 +1329,8 @@ function RecentTradeTable({
   onOfficialSelect,
   onTickerSelect,
 }: RecentTradeTableProps) {
+  const visibleTrades = mergeTradeActivity(trades)
+
   return (
     <table className="data-table">
       <thead>
@@ -1342,7 +1344,7 @@ function RecentTradeTable({
         </tr>
       </thead>
       <tbody>
-        {trades.map((trade) => (
+        {visibleTrades.map((trade) => (
           <tr key={trade.transactionId}>
             <td>{formatDate(trade.filingDate) ?? 'n/a'}</td>
             <td>
@@ -1456,6 +1458,8 @@ interface TradeTableProps {
 }
 
 function TradeTable({ trades, onTickerSelect }: TradeTableProps) {
+  const visibleTrades = mergeTradeActivity(trades)
+
   return (
     <table className="data-table">
       <thead>
@@ -1470,7 +1474,7 @@ function TradeTable({ trades, onTickerSelect }: TradeTableProps) {
         </tr>
       </thead>
       <tbody>
-        {trades.map((trade) => (
+        {visibleTrades.map((trade) => (
           <tr key={trade.transactionId}>
             <td className="table-col-ticker">
               {trade.ticker !== null ? (
@@ -1528,10 +1532,15 @@ function HolderTable({ holders, onOfficialSelect }: HolderTableProps) {
           <tr key={holder.positionId}>
             <td>
               <button
-                className="table-link"
+                className="table-link table-link-with-avatar"
                 type="button"
                 onClick={() => onOfficialSelect(holder.officialId)}
               >
+                <AvatarImage
+                  name={holder.officialDisplayName}
+                  photoUrl={holder.photoUrl}
+                  size="xxs"
+                />
                 {holder.officialDisplayName}
               </button>
             </td>
@@ -1552,6 +1561,8 @@ interface TickerTradeTableProps {
 }
 
 function TickerTradeTable({ trades, onOfficialSelect }: TickerTradeTableProps) {
+  const visibleTrades = mergeTradeActivity(trades)
+
   return (
     <table className="data-table">
       <thead>
@@ -1565,14 +1576,19 @@ function TickerTradeTable({ trades, onOfficialSelect }: TickerTradeTableProps) {
         </tr>
       </thead>
       <tbody>
-        {trades.map((trade) => (
+        {visibleTrades.map((trade) => (
           <tr key={trade.transactionId}>
             <td>
               <button
-                className="table-link"
+                className="table-link table-link-with-avatar"
                 type="button"
                 onClick={() => onOfficialSelect(trade.officialId)}
               >
+                <AvatarImage
+                  name={trade.officialDisplayName}
+                  photoUrl={trade.photoUrl}
+                  size="xxs"
+                />
                 {trade.officialDisplayName}
               </button>
             </td>

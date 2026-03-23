@@ -98,6 +98,7 @@ export interface TickerTradeActivity {
   transactionId: string
   officialId: string
   officialDisplayName: string
+  photoUrl: string | null
   chamber: string
   stateCode: string | null
   districtCode: string | null
@@ -124,6 +125,7 @@ export interface TickerHolder {
   positionId: string
   officialId: string
   officialDisplayName: string
+  photoUrl: string | null
   chamber: string
   stateCode: string | null
   districtCode: string | null
@@ -248,7 +250,8 @@ interface RequestOptions {
 }
 
 const HOMEPAGE_OFFICIAL_FETCH_LIMIT = 12
-const HOMEPAGE_FEATURED_OFFICIAL_COUNT = 3
+const HOMEPAGE_FEATURED_OFFICIAL_COUNT = 12
+const HOMEPAGE_TICKER_FETCH_LIMIT = 12
 
 export async function fetchHomepageData(
   options: RequestOptions = {},
@@ -260,7 +263,10 @@ export async function fetchHomepageData(
       `/api/v1/officials?limit=${HOMEPAGE_OFFICIAL_FETCH_LIMIT}`,
       options,
     ),
-    getJson<ResponseEnvelope<TickerSummary[]>>('/api/v1/tickers?limit=3', options),
+    getJson<ResponseEnvelope<TickerSummary[]>>(
+      `/api/v1/tickers?limit=${HOMEPAGE_TICKER_FETCH_LIMIT}`,
+      options,
+    ),
   ])
 
   return {

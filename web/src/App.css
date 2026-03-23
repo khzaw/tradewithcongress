@@ -230,8 +230,6 @@
   }
 
   .command-button:active,
-  .leader-button:active,
-  .ticker-list-button:active,
   .command-list-button:active,
   .text-button:active,
   .ticker-pill:active,
@@ -304,7 +302,7 @@
   }
 
   .search-surface {
-    @apply mt-8 pt-5;
+    @apply pt-1;
   }
 
   .search-grid {
@@ -512,6 +510,7 @@
     gap: 14px;
     padding: 9px 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
     color: var(--text-strong);
     text-align: left;
@@ -519,13 +518,35 @@
   }
 
   .leader-button:hover,
-  .ticker-list-button:hover,
-  .command-list-button:hover {
+  .ticker-list-button:hover {
     background: rgba(255, 255, 255, 0.018);
   }
 
+  .leader-button,
+  .ticker-list-button {
+    padding-inline: 10px;
+    border-radius: 10px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .leader-button:active,
+  .ticker-list-button:active {
+    transform: none;
+    background: rgba(255, 255, 255, 0.014);
+  }
+
+  .leader-button:focus-visible,
+  .ticker-list-button:focus-visible {
+    outline: none;
+    background: rgba(255, 255, 255, 0.014);
+    box-shadow: inset 0 0 0 1px rgba(142, 184, 255, 0.12);
+  }
+
   .leader-list li:first-child .leader-button,
-  .ticker-list li:first-child .ticker-list-button,
+  .ticker-list li:first-child .ticker-list-button {
+    margin-top: -2px;
+  }
+
   .command-list li:first-child .command-list-button {
     padding-top: 0;
   }
@@ -626,10 +647,10 @@
   .asset-mark {
     width: 34px;
     height: 34px;
-    padding: 6px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(247, 249, 252, 0.96);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     object-fit: contain;
   }
 
@@ -653,7 +674,7 @@
   .leader-button:hover .metric-inline,
   .ticker-list-button:hover .metric-inline,
   .command-list-button:hover .metric-inline {
-    color: var(--accent-lime);
+    color: rgba(238, 242, 245, 0.72);
   }
 
   .profile-card {
@@ -1178,6 +1199,7 @@
     align-items: center;
     gap: 8px;
   }
+
 
   .table-link:hover {
     color: var(--accent-violet);
