@@ -191,6 +191,9 @@ Current House ingestion behavior:
   - compact detail-page mastheads so official and ticker desks start closer to the actual data surface
   - a newer minimal pass that removes secondary panels, ring-chart clutter, and redundant toolbar chrome in favor of one primary chart, one supporting rail, and one main table per view
   - a live S&P 500 proxy lane when `ALPHA_VANTAGE_API_KEY` is configured, with graceful fallback copy when local market data is disabled
+  - official profile photos wired through the data model, API, and frontend with circular avatars, load-in animation, and fallback initials
+  - ticker/company marks shown in homepage trade tables alongside ticker pills
+  - table rows that render official names now support avatar rendering across homepage and ticker-detail surfaces when `photo_url` is available
 
 Validated local state as of 2026-03-21:
 
@@ -229,7 +232,8 @@ Validated local state as of 2026-03-21:
   - `/api/v1/search?q=mathew%20sin` resolves `Matthew Sin` despite the typo
   - `/api/v1/search?q=msft` returns `MSFT` as the top ticker match
   - `/api/v1/officials/171` currently returns `Matthew Sin` with `40` active positions
-  - `/api/v1/tickers/MSFT` currently returns `20` parsed trades with latest activity on `2026-03-11`
+- `/api/v1/tickers/MSFT` currently returns `20` parsed trades with latest activity on `2026-03-11`
+- official photo backfill support exists via `officials.photo_url` plus `uv run ingest official-photos`, and the latest local backfill populated a partial set of real photos while leaving fallback initials in place for unmatched officials
 
 ## Current limits
 
@@ -241,6 +245,8 @@ Not implemented yet:
 - richer security search and canonicalization beyond current ticker/issuer matching
 - frontend still uses lightweight query-state navigation rather than a dedicated client router
 - overview, official, and ticker pages now have a stronger visual shell and first-pass visualizations, but they do not yet expose richer filters, filing detail links, or filing source drill-down
+- official photo coverage is still incomplete because the current one-shot backfill leaves unmatched officials and some upstream image URLs still fail, so avatar fallbacks remain necessary
+- ticker/company marks currently rely on lightweight logo resolution and generated fallbacks rather than a first-party mirrored asset store
 - benchmark market data requires `ALPHA_VANTAGE_API_KEY`; without it, the UI falls back to explanatory placeholder copy instead of live comparison data
 - CI/CD to the Oracle VM
 - object storage offload for documents/backups
