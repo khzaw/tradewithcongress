@@ -1065,6 +1065,7 @@ function RecentTradeTable({
         <tr>
           <th>Filed</th>
           <th>Official</th>
+          <th className="table-col-ticker">Ticker</th>
           <th>Asset</th>
           <th>Action</th>
           <th>Est. amount</th>
@@ -1083,7 +1084,7 @@ function RecentTradeTable({
                 {trade.officialDisplayName}
               </button>
             </td>
-            <td>
+            <td className="table-col-ticker">
               {trade.ticker !== null ? (
                 <button
                   className="ticker-pill"
@@ -1094,8 +1095,14 @@ function RecentTradeTable({
                 </button>
               ) : (
                 <span className="ticker-pill muted">{trade.assetType}</span>
-              )}{' '}
-              {trade.assetName}
+              )}
+            </td>
+            <td>
+              {trade.ticker !== null ? (
+                formatAssetLabel(trade.assetName, trade.ticker)
+              ) : (
+                formatAssetLabel(trade.assetName, null)
+              )}
             </td>
             <td>
               <span className={`action-tag action-${normalizeActionTone(trade.transactionType)}`}>
@@ -1120,6 +1127,7 @@ function HoldingsTable({ positions, onTickerSelect }: HoldingsTableProps) {
     <table className="data-table">
       <thead>
         <tr>
+          <th className="table-col-ticker">Ticker</th>
           <th>Asset</th>
           <th>Owner</th>
           <th>Est. amount</th>
@@ -1130,20 +1138,22 @@ function HoldingsTable({ positions, onTickerSelect }: HoldingsTableProps) {
       <tbody>
         {positions.map((position) => (
           <tr key={position.positionId}>
+            <td className="table-col-ticker">
+              {position.ticker !== null ? (
+                <button
+                  className="ticker-pill"
+                  type="button"
+                  onClick={() => onTickerSelect(position.ticker!)}
+                >
+                  {position.ticker}
+                </button>
+              ) : (
+                <span className="ticker-pill muted">{position.assetType}</span>
+              )}
+            </td>
             <td>
               <div className="table-primary">
-                <strong>{position.assetName}</strong>
-                {position.ticker !== null ? (
-                  <button
-                    className="ticker-pill"
-                    type="button"
-                    onClick={() => onTickerSelect(position.ticker!)}
-                  >
-                    {position.ticker}
-                  </button>
-                ) : (
-                  <span className="ticker-pill muted">{position.assetType}</span>
-                )}
+                <strong>{formatAssetLabel(position.assetName, position.ticker)}</strong>
               </div>
             </td>
             <td>{position.ownerType}</td>
@@ -1167,6 +1177,7 @@ function TradeTable({ trades, onTickerSelect }: TradeTableProps) {
     <table className="data-table">
       <thead>
         <tr>
+          <th className="table-col-ticker">Ticker</th>
           <th>Asset</th>
           <th>Action</th>
           <th>Traded</th>
@@ -1178,20 +1189,22 @@ function TradeTable({ trades, onTickerSelect }: TradeTableProps) {
       <tbody>
         {trades.map((trade) => (
           <tr key={trade.transactionId}>
+            <td className="table-col-ticker">
+              {trade.ticker !== null ? (
+                <button
+                  className="ticker-pill"
+                  type="button"
+                  onClick={() => onTickerSelect(trade.ticker!)}
+                >
+                  {trade.ticker}
+                </button>
+              ) : (
+                <span className="ticker-pill muted">{trade.assetType}</span>
+              )}
+            </td>
             <td>
               <div className="table-primary">
-                <strong>{trade.assetName}</strong>
-                {trade.ticker !== null ? (
-                  <button
-                    className="ticker-pill"
-                    type="button"
-                    onClick={() => onTickerSelect(trade.ticker!)}
-                  >
-                    {trade.ticker}
-                  </button>
-                ) : (
-                  <span className="ticker-pill muted">{trade.assetType}</span>
-                )}
+                <strong>{formatAssetLabel(trade.assetName, trade.ticker)}</strong>
               </div>
             </td>
             <td>
@@ -1377,6 +1390,16 @@ function formatTradeAction(value: string): string {
   return value.replaceAll('_', ' ')
 }
 
+function formatAssetLabel(value: string, ticker: string | null): string {
+  const withoutAssetType = value.replace(/\s+\[[A-Z]{2,}\]$/, '')
+  if (ticker === null) {
+    return withoutAssetType
+  }
+
+  const tickerPattern = new RegExp(`\\s*\\(${escapeRegExp(ticker)}\\)$`)
+  return withoutAssetType.replace(tickerPattern, '')
+}
+
 function normalizeActionTone(value: string): 'buy' | 'sell' | 'neutral' {
   const normalized = value.toLowerCase()
   if (normalized.includes('buy') || normalized.includes('purchase')) {
@@ -1401,6 +1424,10 @@ function formatDelay(transactionDate: string | null, filingDate: string): string
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError'
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export default App

@@ -966,6 +966,16 @@
     text-align: left;
   }
 
+  .data-table th:first-child,
+  .data-table td:first-child {
+    padding-left: 0;
+  }
+
+  .table-col-ticker {
+    width: 1%;
+    white-space: nowrap;
+  }
+
   .data-table th {
     color: var(--text-subtle);
     font-family: var(--font-mono);
@@ -991,6 +1001,7 @@
 
   .table-primary strong {
     font-weight: 500;
+    letter-spacing: -0.015em;
   }
 
   .table-link {
