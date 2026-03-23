@@ -397,7 +397,7 @@ function SearchResultsPanel({
                     <span>
                       <strong>{ticker.ticker}</strong>
                       <small>
-                        {ticker.representativeAssetName} · match {ticker.matchedField}
+                        {formatRepresentativeAssetName(ticker.representativeAssetName)} · match {ticker.matchedField}
                       </small>
                     </span>
                     <span className="metric-inline">
@@ -493,7 +493,7 @@ function OverviewView({
                     />
                     <span>
                       <strong>{ticker.ticker}</strong>
-                      <small>{ticker.representativeAssetName}</small>
+                      <small>{formatRepresentativeAssetName(ticker.representativeAssetName)}</small>
                     </span>
                   </span>
                   <span className="metric-inline">{ticker.transactionCount}</span>
@@ -832,7 +832,7 @@ function TickerDetailView({
           </button>
           <span className="section-kicker">Ticker intelligence</span>
           <h1 className="profile-name">{detail.summary.ticker}</h1>
-          <p className="profile-meta">{detail.summary.representativeAssetName}</p>
+          <p className="profile-meta">{formatRepresentativeAssetName(detail.summary.representativeAssetName)}</p>
           {tickerSubtitle !== null ? <p className="profile-submeta">{tickerSubtitle}</p> : null}
 
           <div className="profile-stat-grid">
@@ -1603,13 +1603,17 @@ function formatTradeAction(value: string): string {
 }
 
 function formatAssetLabel(value: string, ticker: string | null): string {
-  const withoutAssetType = value.replace(/\s+\[[A-Z]{2,}\]$/, '')
+  const withoutAssetType = stripDisplayAssetSuffixes(value)
   if (ticker === null) {
     return withoutAssetType
   }
 
   const tickerPattern = new RegExp(`\\s*\\(${escapeRegExp(ticker)}\\)$`)
   return withoutAssetType.replace(tickerPattern, '')
+}
+
+function formatRepresentativeAssetName(value: string): string {
+  return stripDisplayAssetSuffixes(value)
 }
 
 function buildTickerSubtitle(
@@ -1622,13 +1626,23 @@ function buildTickerSubtitle(
     const normalizedIssuer = issuerName.trim().toLowerCase()
 
     if (normalizedAsset === normalizedIssuer || normalizedAsset.startsWith(`${normalizedIssuer} -`)) {
-      return assetType.trim() === '' ? null : assetType
+      const normalizedAssetType = assetType.trim().toLowerCase()
+      if (normalizedAssetType === '' || normalizedAssetType === 'common stock') {
+        return null
+      }
+
+      return assetType
     }
 
     return issuerName
   }
 
-  return assetType.trim() === '' ? null : assetType
+  const normalizedAssetType = assetType.trim().toLowerCase()
+  if (normalizedAssetType === '' || normalizedAssetType === 'common stock') {
+    return null
+  }
+
+  return assetType
 }
 
 function normalizeActionTone(value: string): 'buy' | 'sell' | 'neutral' {
@@ -1704,6 +1718,14 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
+}
+
+function stripDisplayAssetSuffixes(value: string): string {
+  return value
+    .replace(/\s+\[[A-Z]{2,}\]$/, '')
+    .replace(/\s*-\s+common stock$/i, '')
+    .replace(/\s*-\s+stock$/i, '')
+    .trim()
 }
 
 function buildAssetMarkDataUrl(ticker: string, assetName: string): string {
