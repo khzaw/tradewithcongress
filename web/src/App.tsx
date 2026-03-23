@@ -910,18 +910,17 @@ function TickerDetailView({
         <article className="surface-card">
           <div className="surface-heading">
             <div>
-              <span className="section-kicker">Disclosure flow</span>
+              <span className="section-kicker">Activity</span>
               <h2>{formatCompactCurrency(estimatedVolume)}</h2>
             </div>
             <span className="note-pill">
               {averageLag === null
                 ? `${formatInteger(detail.summary.tradingOfficialCount)} officials`
-                : `Avg lag ${averageLag}d`}
+                : `${detail.trades.length} trades`}
             </span>
           </div>
           <p className="muted-copy">
-            Activity spans {formatDate(detail.summary.firstTransactionDate) ?? 'n/a'} to{' '}
-            {formatDate(detail.summary.latestTransactionDate) ?? 'n/a'}.
+            {formatDateWindow(detail.summary.firstTransactionDate, detail.summary.latestTransactionDate)}
           </p>
         </article>
 
@@ -941,10 +940,10 @@ function TickerDetailView({
         <article className="surface-card">
           <div className="surface-heading">
             <div>
-              <span className="section-kicker">Trade ledger</span>
-              <h2>Trade history</h2>
+              <span className="section-kicker">Trades</span>
+              <h2>Recent trades</h2>
             </div>
-            <span className="note-pill">{detail.summary.ticker}</span>
+            <span className="note-pill">{formatInteger(detail.trades.length)} trades</span>
           </div>
           <TickerTradeTable trades={detail.trades} onOfficialSelect={onOfficialSelect} />
         </article>
@@ -1615,6 +1614,29 @@ function formatDate(value: string | null): string | null {
     month: 'short',
     day: 'numeric',
   }).format(new Date(value))
+}
+
+function formatDateWindow(startDate: string | null, endDate: string | null): string {
+  const start = formatDate(startDate)
+  const end = formatDate(endDate)
+
+  if (start === null && end === null) {
+    return 'Date range not available.'
+  }
+
+  if (start !== null && end !== null) {
+    if (start === end) {
+      return `Activity on ${start}.`
+    }
+
+    return `${start} to ${end}.`
+  }
+
+  if (end !== null) {
+    return `Up to ${end}.`
+  }
+
+  return `From ${start}.`
 }
 
 function formatTradeAction(value: string): string {
