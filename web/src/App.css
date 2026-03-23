@@ -400,7 +400,7 @@
 
   .metric-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0;
+    gap: 28px;
   }
 
   .metric-card {
@@ -409,14 +409,12 @@
     flex-direction: column;
     justify-content: flex-start;
     gap: 6px;
-    padding: 14px 18px 14px 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 14px 0;
     background: transparent;
   }
 
   .metric-card:last-child {
     padding-right: 0;
-    border-right: 0;
   }
 
   .metric-card strong {
