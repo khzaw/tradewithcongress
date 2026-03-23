@@ -687,14 +687,6 @@ function OfficialDetailView({
             </div>
           </div>
         </article>
-
-        <article className="surface-card rail-compact">
-          <div className="surface-heading compact">
-            <span className="section-kicker">Top disclosed positions</span>
-            <h3>{topHoldings.length}</h3>
-          </div>
-          <CompactList segments={topHoldings} formatter={(value) => formatCompactCurrency(value)} />
-        </article>
       </aside>
 
       <div className="detail-stage">
@@ -728,11 +720,22 @@ function OfficialDetailView({
         <article className="surface-card">
           <div className="surface-heading">
             <div>
+              <span className="section-kicker">Top disclosed positions</span>
+              <h2>Largest current exposures</h2>
+            </div>
+            <span className="note-pill">{topHoldings.length} positions</span>
+          </div>
+          <CompactList segments={topHoldings} formatter={(value) => formatCompactCurrency(value)} />
+        </article>
+
+        <article className="surface-card">
+          <div className="surface-heading">
+            <div>
               <span className="section-kicker">
                 {hasTradeHistory ? 'Trade cadence' : 'Portfolio concentration'}
               </span>
               <h2>
-                {hasTradeHistory ? 'Disclosed trading flow over time' : 'Largest disclosed positions'}
+                {hasTradeHistory ? 'Disclosed trading flow over time' : 'Portfolio overview'}
               </h2>
             </div>
             <span className="note-pill">
@@ -744,7 +747,9 @@ function OfficialDetailView({
           {hasTradeHistory ? (
             <TrendChart points={tradeSeries} label="Estimated disclosed volume" tone="lime" />
           ) : (
-            <CompactList segments={topHoldings} formatter={(value) => formatCompactCurrency(value)} />
+            <p className="muted-copy">
+              This profile currently resolves to holdings-only disclosure data. The table below is the latest disclosed snapshot, and PTR-backed trade history will appear once parsed transactions exist for this member.
+            </p>
           )}
         </article>
 
