@@ -1,0 +1,17 @@
+.git
+.idea
+.DS_Store
+.env
+.env.*
+.venv
+.pytest_cache
+__pycache__
+*.pyc
+api/node_modules
+web/node_modules
+web/dist
+ingest/.venv
+data
+postgres-data
+tmp
+coverage

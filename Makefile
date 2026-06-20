@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap db-up db-down dev web api ingest parse-house normalize-assets parse-holdings migrate test-ingest test-api lint clean
+.PHONY: bootstrap db-up db-down dev web api ingest parse-house normalize-assets parse-holdings migrate test-ingest test-api lint docker-build docker-migrate docker-up docker-down clean
 
 bootstrap:
 	cd api && bun install
@@ -46,6 +46,18 @@ test-api: db-up migrate
 lint:
 	cd api && bun run typecheck
 	cd web && bun run lint
+
+docker-build:
+	docker compose -f docker-compose.prod.yml --profile setup --profile jobs build
+
+docker-migrate:
+	docker compose -f docker-compose.prod.yml --profile setup run --rm migrate
+
+docker-up:
+	docker compose -f docker-compose.prod.yml up -d postgres api web
+
+docker-down:
+	docker compose -f docker-compose.prod.yml down
 
 clean:
 	rm -rf api/node_modules web/node_modules web/dist ingest/.venv postgres-data

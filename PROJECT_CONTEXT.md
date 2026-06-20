@@ -109,12 +109,14 @@ Repo shell wrappers source the root `.env` before starting `api/`, `web/`, or `i
 Current relevant environment variables:
 
 - `DATABASE_URL`
+- `APP_DATABASE_URL`
 - `DOCUMENT_STORAGE_DIR`
 - `API_PORT`
 - `ALPHA_VANTAGE_API_KEY`
 - `MARKET_BENCHMARK_SYMBOL`
 - `MARKET_DATA_CACHE_DIR`
 - `MARKET_DATA_CACHE_TTL_HOURS`
+- `WEB_PORT`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -134,6 +136,8 @@ Completed foundation:
 - versioned Bun + Hono read API scaffold
 - repo scaffold for `web`, `ingest`, `db`, and `infra`
 - local Docker Compose Postgres workflow
+- production-oriented Dockerfiles for the API, web frontend, and ingest worker
+- production-oriented Docker Compose stack for Postgres, API, web, migrations, and one-off ingest jobs
 - Python migration runner
 - canonical schema for:
   - officials
@@ -257,7 +261,7 @@ Not implemented yet:
 - official photo coverage is still incomplete because the current one-shot backfill leaves unmatched officials and some upstream image URLs still fail, so avatar fallbacks remain necessary
 - ticker/company marks currently rely on lightweight logo resolution and generated fallbacks rather than a first-party mirrored asset store
 - benchmark market data requires `ALPHA_VANTAGE_API_KEY`; without it, the UI falls back to explanatory placeholder copy instead of live comparison data
-- CI/CD to the Oracle VM
+- CI/CD to the Oracle VM; container images and a production Compose file now exist, but automated host rollout is not implemented yet
 - object storage offload for documents/backups
 
 Current House ingest now parses a first-pass holdings snapshot from latest candidate/full disclosure reports, including OCR-backed classification for scanned notice forms. Rich OCR/table extraction for future scanned holdings disclosures is still a likely follow-up.

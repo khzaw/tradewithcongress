@@ -131,6 +131,43 @@ Stop local services:
 make db-down
 ```
 
+## Container runtime
+
+The repo also includes production-oriented images for the API, web frontend, and ingest worker:
+
+- `api/Dockerfile`: Bun + Hono read API
+- `web/Dockerfile`: Vite static build served by nginx, with `/api/` proxied to the API service
+- `ingest/Dockerfile`: Python/uv ingest worker with `poppler-utils` and `tesseract-ocr` for OCR-backed holdings parsing
+- `docker-compose.prod.yml`: Postgres, API, web, migration, and one-off ingest job services
+
+Set production secrets in `.env` or the shell before running the container stack. Use a real `POSTGRES_PASSWORD` outside local testing. The container stack uses `APP_DATABASE_URL` only when you need to override the default internal Compose database URL; the host-local `DATABASE_URL` remains for non-container scripts.
+
+Build the images:
+
+```bash
+make docker-build
+```
+
+Run migrations once before starting the app services:
+
+```bash
+make docker-migrate
+```
+
+Start the containerized web/API/Postgres stack:
+
+```bash
+make docker-up
+```
+
+The web service publishes to `http://localhost:8080` by default. Override with `WEB_PORT=...`.
+
+Run ingest commands as one-off jobs:
+
+```bash
+docker compose -f docker-compose.prod.yml --profile jobs run --rm ingest uv run ingest house-metadata --year 2026
+```
+
 ## Layout
 
 ```text

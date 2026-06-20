@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tradewithcongress}
+      POSTGRES_USER: ${POSTGRES_USER:-tradewithcongress}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradewithcongress}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tradewithcongress} -d ${POSTGRES_DB:-tradewithcongress}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    image: tradewithcongress-ingest:latest
+    build:
+      context: .
+      dockerfile: ingest/Dockerfile
+    environment:
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-tradewithcongress}:${POSTGRES_PASSWORD:-tradewithcongress}@postgres:5432/${POSTGRES_DB:-tradewithcongress}}
+      DOCUMENT_STORAGE_DIR: /data/documents
+    volumes:
+      - document-data:/data/documents
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["uv", "run", "migrate"]
+    profiles: ["setup"]
+    restart: "no"
+
+  api:
+    image: tradewithcongress-api:latest
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-tradewithcongress}:${POSTGRES_PASSWORD:-tradewithcongress}@postgres:5432/${POSTGRES_DB:-tradewithcongress}}
+      API_PORT: 8787
+      ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-}
+      MARKET_BENCHMARK_SYMBOL: ${MARKET_BENCHMARK_SYMBOL:-SPY}
+      MARKET_DATA_CACHE_DIR: /data/market-data
+      MARKET_DATA_CACHE_TTL_HOURS: ${MARKET_DATA_CACHE_TTL_HOURS:-12}
+    volumes:
+      - market-data:/data/market-data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r = await fetch('http://127.0.0.1:8787/health'); if (!r.ok) process.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  web:
+    image: tradewithcongress-web:latest
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ingest:
+    image: tradewithcongress-ingest:latest
+    build:
+      context: .
+      dockerfile: ingest/Dockerfile
+    environment:
+      DATABASE_URL: ${APP_DATABASE_URL:-postgresql://${POSTGRES_USER:-tradewithcongress}:${POSTGRES_PASSWORD:-tradewithcongress}@postgres:5432/${POSTGRES_DB:-tradewithcongress}}
+      DOCUMENT_STORAGE_DIR: /data/documents
+    volumes:
+      - document-data:/data/documents
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["jobs"]
+    restart: "no"
+
+volumes:
+  postgres-data:
+  document-data:
+  market-data:
